@@ -12,7 +12,7 @@ function SalesForm() {
     pointOfContactName: "",
     pointOfContactDesignation: "",
     pointOfContactNumber: "",
-    pointOfContactEmail: "", 
+    pointOfContactEmail: "",
     accreditation: "",
     otherAccreditation: "",
     affiliation: "",
@@ -27,7 +27,6 @@ function SalesForm() {
     totalContractValue: "",
     remarks: "",
   });
-  
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +93,6 @@ function SalesForm() {
         totalContractValue: formData.totalContractValue,
         remarks: formData.remarks,
       };
-      
 
       try {
         // Remove unused response variable
@@ -140,7 +138,7 @@ function SalesForm() {
             perStudentRate: "",
             totalContractValue: "",
             remarks: "",
-          });          
+          });
           sessionStorage.removeItem("salesVisitCode");
           setVisitCode(generateVisitCode());
         }, 2000);
@@ -175,6 +173,9 @@ function SalesForm() {
             />
           </div>
 
+          {/* State Select Component */}
+          <StateSelect state={formData.state} handleChange={handleChange} />
+
           <div>
             <label className="block text-sm font-medium">City</label>
             <input
@@ -186,54 +187,59 @@ function SalesForm() {
             />
           </div>
 
-                  {/* State Select Component */}
-                  <StateSelect state={formData.state} handleChange={handleChange} />
+          <div>
+            <label className="block text-sm font-medium">
+              Point of Contact Name
+            </label>
+            <input
+              type="text"
+              name="pointOfContactName"
+              value={formData.pointOfContactName}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
 
           <div>
-  <label className="block text-sm font-medium">Point of Contact Name</label> 
-  <input
-    type="text"
-    name="pointOfContactName" 
-    value={formData.pointOfContactName} 
-    onChange={handleChange}
-    className={inputClass}
-  />
-</div>
+            <label className="block text-sm font-medium">
+              Point of Contact Email
+            </label>
+            <input
+              type="email"
+              name="pointOfContactEmail"
+              value={formData.pointOfContactEmail}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
 
-<div>
-  <label className="block text-sm font-medium">Point of Contact Email</label>
-  <input
-    type="email"
-    name="pointOfContactEmail"
-    value={formData.pointOfContactEmail}
-    onChange={handleChange}
-    className={inputClass}
-  />
-</div>
+          {/* Change Client Designation */}
+          <div>
+            <label className="block text-sm font-medium">
+              Point of Contact Designation
+            </label>
+            <input
+              type="text"
+              name="pointOfContactDesignation"
+              value={formData.pointOfContactDesignation}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
 
-{/* Change Client Designation */}
-<div>
-  <label className="block text-sm font-medium">Point of Contact Designation</label> 
-  <input
-    type="text"
-    name="pointOfContactDesignation" 
-    value={formData.pointOfContactDesignation} 
-    onChange={handleChange}
-    className={inputClass}
-  />
-</div>
-
-{/* Change Client Contact */}
-<div>
-  <label className="block text-sm font-medium">Point of Contact Number</label> 
-  <input
-    type="text"
-    name="pointOfContactNumber" 
-    value={formData.pointOfContactNumber} 
-    onChange={handleChange}
-    className={inputClass}
-  />
-</div>
+          {/* Change Client Contact */}
+          <div>
+            <label className="block text-sm font-medium">
+              Point of Contact Number
+            </label>
+            <input
+              type="text"
+              name="pointOfContactNumber"
+              value={formData.pointOfContactNumber}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-medium">Accreditation</label>
@@ -267,8 +273,8 @@ function SalesForm() {
           </div>
 
           {/* Affiliation Field */}
-        {/* Affiliation Select Component */}
-        <AffiliationSelect
+          {/* Affiliation Select Component */}
+          <AffiliationSelect
             affiliation={formData.affiliation}
             otherAffiliation={formData.otherAffiliation}
             handleChange={handleChange}

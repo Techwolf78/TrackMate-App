@@ -1,55 +1,68 @@
 import { useEffect, useState } from "react";
-import { ref, get } from "firebase/database";
+import { ref, get, set, push } from "firebase/database";
 import { db } from "../../../firebaseConfig";
 
-// This component is responsible for fetching the last placement code and generating the next one
-const PlacementVisitCode = () => {
+// Function to get the last placement code from the most recent transaction
+const getLastPlacementCode = async () => {
+  const spentRef = ref(db, "sales_spent/");
+
+  const snapshot = await get(spentRef);
+  if (snapshot.exists()) {
+    const data = snapshot.val();
+    const keys = Object.keys(data);
+    const lastTransactionKey = keys[keys.length - 1]; // Get the last transaction key
+    const lastCode = data[lastTransactionKey].visitCode; // Assuming visitCode is saved under each transaction
+    return lastCode;
+  }
+  return null;
+};
+
+// Function to increment the placement code
+const incrementPlacementCode = (lastCode) => {
+  const num = parseInt(lastCode.split('_')[1], 10); // Extract the number after 'Placement_'
+  const nextCodeNum = num + 1; // Increment the number
+  return `Placement_${nextCodeNum}`; // Directly append the incremented number
+};
+
+const PlacementVisitCode = ({ onCodeChange }) => {
   const [visitCode, setVisitCode] = useState("");
 
   useEffect(() => {
     const fetchLastVisitCode = async () => {
       try {
-        const spentRef = ref(db, "sales_spent/");
-        const snapshot = await get(spentRef);
-
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const lastCode = getLastPlacementCode(data);
-          const nextCode = incrementPlacementCode(lastCode);
+        const lastCode = await getLastPlacementCode();
+        if (lastCode) {
+          const nextCode = incrementPlacementCode(lastCode); // Generate the next code
           setVisitCode(nextCode);
+          onCodeChange(nextCode); // Pass the generated code to the parent component
         } else {
-          setVisitCode("Placement_01"); // Default to Placement_01 if no data found
+          const defaultCode = "Placement_01"; // Default code if no data exists
+          setVisitCode(defaultCode);
+          onCodeChange(defaultCode); // Pass default code to the parent component
         }
       } catch (error) {
         console.error("Error fetching last placement code:", error);
+        const defaultCode = "Placement_01"; // Fallback to default code in case of error
+        setVisitCode(defaultCode);
+        onCodeChange(defaultCode); // Pass default code to the parent component
       }
     };
 
     fetchLastVisitCode();
-  }, []);
+  }, [onCodeChange]);
 
-  // Function to extract the last placement code from Firebase data
-  const getLastPlacementCode = (data) => {
-    const codes = Object.values(data)
-      .map((item) => item.visitCode)
-      .filter((code) => code.startsWith("Placement_"));
-    const lastCode = codes.sort((a, b) => {
-      const numA = parseInt(a.split("_")[1]);
-      const numB = parseInt(b.split("_")[1]);
-      return numB - numA; // Sort in descending order
-    })[0];
-
-    return lastCode || "Placement_00"; // Default to "Placement_00" if no code found
-  };
-
-  // Function to increment the placement code
-  const incrementPlacementCode = (lastCode) => {
-    const lastCodeNumber = parseInt(lastCode.split("_")[1]);
-    const nextCodeNumber = lastCodeNumber + 1;
-    return `Placement_${nextCodeNumber.toString().padStart(2, "0")}`;
-  };
-
-  return visitCode; // Just return the next code
+  return (
+    <div>
+      <label htmlFor="visitCode" className="text-sm font-semibold">Visit Code</label>
+      <input
+        type="text"
+        id="visitCode"
+        value={visitCode}
+        readOnly
+        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
+      />
+    </div>
+  );
 };
 
 export default PlacementVisitCode;

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { ref, get, set } from "firebase/database"; // Firebase database imports
+import { db } from "../../../firebaseConfig"; // Firebase configuration
 import { auth } from "../../../firebaseConfig"; // Firebase auth import
 import { signOut } from "firebase/auth"; // Firebase sign-out method
 
@@ -26,46 +28,54 @@ function PlacementForm() {
   const [isLoading, setIsLoading] = useState(false); // Loading state
   const [successMessage, setSuccessMessage] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false); // Track dropdown state
-  // Inside your component function:
-  const dropdownRef = useRef(null); // Create a ref for the dropdown
+  const [visitCode, setVisitCode] = useState(""); // Visit Code state
 
+  const dropdownRef = useRef(null); // Create a ref for the dropdown
   const navigate = useNavigate();
 
-  // Dynamically generate Visit Code for Placement
-  const generateVisitCode = () => {
-    return `PLACEMENT-VIST-${Math.floor(Math.random() * 10000)}`; // Unique visit code for Placement
+  // Function to get the last visit code from Firebase
+  const getLastVisitCode = async () => {
+    const placementVisitRef = ref(db, "placement_visitcode");
+
+    const snapshot = await get(placementVisitRef);
+    if (snapshot.exists()) {
+      const lastCode = snapshot.val().visitCode; // Get the last visit code from Firebase
+      return lastCode;
+    }
+    return null;
   };
 
-  // Use sessionStorage to persist visitCode for Placement
-  const [visitCode, setVisitCode] = useState(
-    sessionStorage.getItem("placementVisitCode") || generateVisitCode()
-  );
+  const incrementVisitCode = (lastCode) => {
+    const num = parseInt(lastCode.split('_')[2], 10); // Change index to 2 (the number after "Placement_Visit_")
+    const nextCodeNum = num + 1; // Increment the number
+    return `Placement_Visit_${String(nextCodeNum).padStart(2, '0')}`; // Zero-pad the number for consistent formatting
 
-  // Store the generated visitCode in sessionStorage if not already set
-  useEffect(() => {
-    if (!sessionStorage.getItem("placementVisitCode")) {
-      sessionStorage.setItem("placementVisitCode", visitCode);
-    }
-  }, [visitCode]);
+  };
+  
 
+
+  // Fetch the last visit code and set the new visit code
   useEffect(() => {
-    // Function to handle clicks outside the dropdown
-    const handleClickOutside = (event) => {
-      // Check if the click is outside of the dropdown
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false); // Close the dropdown if clicked outside
+    const fetchVisitCode = async () => {
+      try {
+        const lastCode = await getLastVisitCode();
+        if (lastCode) {
+          const nextCode = incrementVisitCode(lastCode); // Generate the next code
+          setVisitCode(nextCode); // Set the visit code in the state
+        } else {
+          const defaultCode = "Placement_Visit_01"; // Default code if no data exists
+          setVisitCode(defaultCode);
+        }
+      } catch (error) {
+        console.error("Error fetching last visit code:", error);
+        setVisitCode("Placement_01"); // Fallback to default code in case of error
       }
     };
 
-    // Attach the event listener to the document
-    document.addEventListener("mousedown", handleClickOutside);
-
-    // Cleanup the event listener when the component is unmounted
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    fetchVisitCode();
   }, []);
 
+  // Handle form field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -74,32 +84,13 @@ function PlacementForm() {
     }));
   };
 
-  // Handle change for the domain dropdown
-  const handleDomainChange = (e) => {
-    const { value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      domain: value,
-      otherDomain: value === "Other" ? prevData.otherDomain : "", // Reset custom domain if not "Other"
-    }));
-  };
-
-  // Handle the custom domain input
-  const handleOtherDomainChange = (e) => {
-    const { value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      otherDomain: value,
-    }));
-  };
-
+  // Submit form data
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setIsModalOpen(true);
     setIsLoading(true);
 
-    // Use the custom domain if 'Other' was selected, else use the selected domain
     const finalDomain =
       formData.domain === "Other" ? formData.otherDomain : formData.domain;
 
@@ -114,7 +105,7 @@ function PlacementForm() {
       crRep: formData.crRep,
       visitPurpose: formData.visitPurpose,
       industry: formData.industry,
-      domain: finalDomain, // Set domain to the custom value if 'Other' is selected
+      domain: finalDomain,
       hiringPeriod: formData.hiringPeriod,
       numbersForHiring: formData.numbersForHiring,
       pitched: formData.pitched,
@@ -122,7 +113,13 @@ function PlacementForm() {
     };
 
     try {
-      // Simulate submission
+      // Save visitCode under placement_visitcode node in Firebase
+      const visitCodeRef = ref(db, "placement_visitcode");
+      await set(visitCodeRef, {
+        visitCode: visitCode,
+      });
+
+      // Submit data to Google Sheets
       await fetch(
         "https://script.google.com/macros/s/AKfycbwWz8oqbN65VDZfW_Ics6eYqJcaIBiLnsS1kbjW15Ebak0Ez6mHyGAJJINFki5XuyU/exec",
         {
@@ -136,10 +133,7 @@ function PlacementForm() {
         }
       );
 
-      // Show success message after form submission
       setSuccessMessage("Your data has been successfully submitted!");
-
-      // Reset form data
       setFormData({
         companyName: "",
         city: "",
@@ -151,15 +145,15 @@ function PlacementForm() {
         visitPurpose: "",
         industry: "",
         domain: "",
-        otherDomain: "", // Reset custom domain
+        otherDomain: "",
         hiringPeriod: "",
         numbersForHiring: "",
         pitched: "",
         jdReceived: "",
       });
 
-      const newVisitCode = generateVisitCode();
-      sessionStorage.setItem("placementVisitCode", newVisitCode);
+      // Generate a new visit code for the next submission
+      const newVisitCode = incrementVisitCode(visitCode);
       setVisitCode(newVisitCode);
 
       // Hide the modal after a short delay
@@ -243,13 +237,10 @@ function PlacementForm() {
 
             {/* Dropdown for Logout */}
             {dropdownOpen && (
-              <div
-                ref={dropdownRef} // Attach the ref to the dropdown container
-                className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg w-40"
-              >
+              <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-md w-32">
                 <button
                   onClick={handleLogout}
-                  className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Logout
                 </button>
@@ -257,246 +248,256 @@ function PlacementForm() {
             )}
           </div>
         </div>
+        
+        {/* All your form fields go here */}
+        <div className="mb-4">
+          <label htmlFor="companyName" className="text-sm font-semibold">
+            Company Name
+          </label>
+          <input
+            type="text"
+            name="companyName"
+            id="companyName"
+            value={formData.companyName}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
 
-        {/* Input Fields */}
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium">Company Name</label>
+        <div className="mb-4">
+          <label htmlFor="city" className="text-sm font-semibold">
+            City
+          </label>
+          <input
+            type="text"
+            name="city"
+            id="city"
+            value={formData.city}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="clientName" className="text-sm font-semibold">
+            Client Name
+          </label>
+          <input
+            type="text"
+            name="clientName"
+            id="clientName"
+            value={formData.clientName}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="clientDesignation" className="text-sm font-semibold">
+            Client Designation
+          </label>
+          <input
+            type="text"
+            name="clientDesignation"
+            id="clientDesignation"
+            value={formData.clientDesignation}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="clientEmail" className="text-sm font-semibold">
+            Client Email
+          </label>
+          <input
+            type="email"
+            name="clientEmail"
+            id="clientEmail"
+            value={formData.clientEmail}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="clientContact" className="text-sm font-semibold">
+            Client Contact
+          </label>
+          <input
+            type="text"
+            name="clientContact"
+            id="clientContact"
+            value={formData.clientContact}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="crRep" className="text-sm font-semibold">
+            CR Representative
+          </label>
+          <input
+            type="text"
+            name="crRep"
+            id="crRep"
+            value={formData.crRep}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="visitPurpose" className="text-sm font-semibold">
+            Visit Purpose
+          </label>
+          <input
+            type="text"
+            name="visitPurpose"
+            id="visitPurpose"
+            value={formData.visitPurpose}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="industry" className="text-sm font-semibold">
+            Industry
+          </label>
+          <input
+            type="text"
+            name="industry"
+            id="industry"
+            value={formData.industry}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="domain" className="text-sm font-semibold">
+            Domain
+          </label>
+          <select
+            name="domain"
+            id="domain"
+            value={formData.domain}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          >
+            <option value="">Select Domain</option>
+            <option value="IT">IT</option>
+            <option value="Finance">Finance</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        {formData.domain === "Other" && (
+          <div className="mb-4">
+            <label htmlFor="otherDomain" className="text-sm font-semibold">
+              Other Domain
+            </label>
             <input
               type="text"
-              name="companyName"
-              value={formData.companyName}
+              name="otherDomain"
+              id="otherDomain"
+              value={formData.otherDomain}
               onChange={handleChange}
               className={inputClass}
               required
             />
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium">City</label>
-            <input
-              type="text"
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              className={inputClass}
-              required
-            />
-          </div>
+        <div className="mb-4">
+          <label htmlFor="hiringPeriod" className="text-sm font-semibold">
+            Hiring Period
+          </label>
+          <input
+            type="text"
+            name="hiringPeriod"
+            id="hiringPeriod"
+            value={formData.hiringPeriod}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium">Client Name</label>
-            <input
-              type="text"
-              name="clientName"
-              value={formData.clientName}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
+        <div className="mb-4">
+          <label htmlFor="numbersForHiring" className="text-sm font-semibold">
+            Number of People for Hiring
+          </label>
+          <input
+            type="text"
+            name="numbersForHiring"
+            id="numbersForHiring"
+            value={formData.numbersForHiring}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium">
-              Client Designation
-            </label>
-            <input
-              type="text"
-              name="clientDesignation"
-              value={formData.clientDesignation}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
+        <div className="mb-4">
+          <label htmlFor="pitched" className="text-sm font-semibold">
+            Pitched (Yes/No)
+          </label>
+          <input
+            type="text"
+            name="pitched"
+            id="pitched"
+            value={formData.pitched}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium">Client Email ID</label>
-            <input
-              type="email"
-              name="clientEmail"
-              value={formData.clientEmail}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
+        <div className="mb-4">
+          <label htmlFor="jdReceived" className="text-sm font-semibold">
+            JD Received (Yes/No)
+          </label>
+          <input
+            type="text"
+            name="jdReceived"
+            id="jdReceived"
+            value={formData.jdReceived}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium">
-              Client Contact No.
-            </label>
-            <input
-              type="text"
-              name="clientContact"
-              value={formData.clientContact}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">CR Rep</label>
-            <select
-              name="crRep"
-              value={formData.crRep}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              <option value="">Select CR Rep</option>
-              <option value="Yes">Shashi Kant Sir</option>
-              <option value="No">Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Visit Purpose</label>
-            <input
-              type="text"
-              name="visitPurpose"
-              value={formData.visitPurpose}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Industry</label>
-            <input
-              type="text"
-              name="industry"
-              value={formData.industry}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Domain</label>
-            <select
-              name="domain"
-              value={formData.domain}
-              onChange={handleDomainChange}
-              className={inputClass}
-            >
-              <option value="">Select Domain</option>
-              <option value="Engineering">Engineering</option>
-              <option value="MBA">MBA</option>
-              <option value="Other">Other</option>
-            </select>
-
-            {/* Show additional input for custom domain when "Other" is selected */}
-            {formData.domain === "Other" && (
-              <div className="mt-2">
-                <input
-                  type="text"
-                  name="otherDomain"
-                  value={formData.otherDomain}
-                  onChange={handleOtherDomainChange}
-                  className={inputClass}
-                  placeholder="Enter Other Domain"
-                />
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Hiring Period</label>
-            <input
-              type="text"
-              name="hiringPeriod"
-              value={formData.hiringPeriod}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">
-              Numbers for Hiring
-            </label>
-            <input
-              type="number"
-              name="numbersForHiring"
-              value={formData.numbersForHiring}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Pitched</label>
-            <select
-              name="pitched"
-              value={formData.pitched}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              <option value="">Select Pitched</option>
-              <option value="Colleges">Colleges</option>
-              <option value="Gryphon">Gryphon</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">JD Received</label>
-            <input
-              type="text"
-              name="jdReceived"
-              value={formData.jdReceived}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
-
-          {/* Submit Button */}
-          <div className="text-center mt-8">
-            <button type="submit" className={buttonClass}>
-              Submit
-            </button>
-          </div>
+        <div className="mb-4">
+          <button
+            type="submit"
+            className={buttonClass}
+            disabled={isLoading} // Disable button when loading
+          >
+            {isLoading ? "Submitting..." : "Submit"}
+          </button>
         </div>
       </form>
 
-      {/* Overlay Modal */}
+      {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center relative">
-            {/* Close Button */}
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-900"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                className="stroke-current"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-
-            {/* Modal Content */}
-            <div>
-              {isLoading ? (
-                <>
-                  <div className="text-xl font-semibold mb-4">Saving...</div>
-                  <div className="animate-spin rounded-full border-t-4 border-teal-500 w-12 h-12 mx-auto mb-4"></div>
-                </>
-              ) : (
-                <>
-                  <div className="text-xl font-semibold mb-4">
-                    {successMessage}
-                  </div>
-                </>
-              )}
-            </div>
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg text-center">
+            <p>{successMessage}</p>
           </div>
         </div>
       )}

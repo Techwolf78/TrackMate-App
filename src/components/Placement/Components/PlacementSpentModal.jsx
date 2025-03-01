@@ -1,10 +1,11 @@
+// PlacementSpentModal.jsx
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { ref, set } from "firebase/database";
 import { db } from "../../../firebaseConfig";
-import CompanyList from "../../Placement/Components/CompanyList"; // Import the CollegeList component
-import { format } from "date-fns"; // Using date-fns for date formatting
-import PlacementVisitCode from "../../Placement/Components/PlacementVisitCode"; // Import the PlacementVisitCode component
+import CompanyList from "../../Placement/Components/CompanyList";
+import { format } from "date-fns"; 
+import PlacementVisitCode from "../../Placement/Components/PlacementVisitCode"; 
 
 const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
   const [allocatedAmount, setAllocatedAmount] = useState("");
@@ -17,8 +18,8 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
   const [fuel, setFuel] = useState("");
   const [stay, setStay] = useState("");
   const [toll, setToll] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today's date
-  const [visitCode, setVisitCode] = useState(""); // State for the visit code
+  const [selectedDate, setSelectedDate] = useState(new Date()); 
+  const [visitCode, setVisitCode] = useState(""); // State for visit code
 
   if (!isOpen) return null;
 
@@ -44,65 +45,60 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
 
   const handleFormSubmit = () => {
     // If no date is selected, use today's date
-    const dateToSave = selectedDate.getTime(); // Convert date to timestamp
+    const dateToSave = selectedDate.getTime(); 
 
-    // Basic validation before submitting the form
     if (!allocatedAmount || !spentAmount || !visitType || !college || !visitCode) {
       alert("Please fill in all the required fields.");
       return;
     }
 
-    // Calculate the total number of colleges (including the main college and additional colleges)
+    // Calculate total colleges including main and additional colleges
     const totalColleges =
       additionalColleges.length +
       (college === "Other" ? 1 : 0) +
       (college !== "" && college !== "Other" ? 1 : 0);
 
-    // Calculate the split amounts for food, fuel, stay, and toll
+    // Calculate split amounts for food, fuel, stay, and toll
     const foodSplit = (parseFloat(food) || 0) / totalColleges;
     const fuelSplit = (parseFloat(fuel) || 0) / totalColleges;
     const staySplit = (parseFloat(stay) || 0) / totalColleges;
     const tollSplit = (parseFloat(toll) || 0) / totalColleges;
 
-    // Create an array to hold the spent data for each college
     const spentDataArray = [];
 
-    // Add the main college (or selected college)
     const mainCollege = college === "Other" ? otherCollegeName : college;
-    if (college !== "") {  // Ensure the selected college is added
+    if (college !== "") {
       spentDataArray.push({
         allocatedAmount: allocatedAmount / totalColleges,
         spentAmount: spentAmount / totalColleges,
         visitType,
-        college: mainCollege, // Save the selected college
+        college: mainCollege, 
         food: foodSplit,
         fuel: fuelSplit,
         stay: staySplit,
         toll: tollSplit,
-        date: dateToSave, // Save the selected date as timestamp
-        visitCode, // Save the visit code
+        date: dateToSave, 
+        visitCode, 
       });
     }
 
-    // Add the additional colleges
     additionalColleges.forEach((collegeName) => {
       spentDataArray.push({
         allocatedAmount: allocatedAmount / totalColleges,
         spentAmount: spentAmount / totalColleges,
         visitType,
-        college: collegeName, // This is for additional colleges
+        college: collegeName, 
         food: foodSplit,
         fuel: fuelSplit,
         stay: staySplit,
         toll: tollSplit,
-        date: dateToSave, // Save the selected date as timestamp
-        visitCode, // Save the visit code for each additional college
+        date: dateToSave, 
+        visitCode, 
       });
     });
 
-    // Save each spent data record to the database
     spentDataArray.forEach((spentData) => {
-      const newSpentRef = ref(db, "sales_spent/" + Date.now());
+      const newSpentRef = ref(db, "plac_spent/" + Date.now());
       set(newSpentRef, spentData)
         .then(() => {
           console.log("Data saved successfully!");
@@ -113,7 +109,7 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
         });
     });
 
-    // Reset the form fields after submission
+    // Reset the form after submission
     setAllocatedAmount("");
     setSpentAmount("");
     setVisitType("");
@@ -127,9 +123,8 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
     setVisitCode(""); // Reset visit code
   };
 
-  // Format the date to DD/MM/YYYY using date-fns
   const formatDate = (date) => {
-    return format(date, "dd/MM/yyyy"); // Formats it as DD/MM/YYYY (e.g., 22/02/2025)
+    return format(date, "dd/MM/yyyy"); 
   };
 
   return (
@@ -147,7 +142,7 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
         </h3>
 
         <div className="space-y-3">
-          {/* Add the PlacementVisitCode at the top */}
+          {/* Pass onCodeChange to PlacementVisitCode */}
           <PlacementVisitCode onCodeChange={handleVisitCodeChange} />
 
           <select
@@ -166,7 +161,7 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
           >
             <option value="">Select Company</option>
-            <CompanyList /> {/* Use CollegeList here */}
+            <CompanyList />
           </select>
 
           {college === "Other" && (

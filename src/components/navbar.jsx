@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaFileAlt, FaVideo, FaUserAlt } from 'react-icons/fa';
+import { FaHome, FaFileAlt, FaVideo, FaUserAlt, FaChartLine } from 'react-icons/fa';  // Import the new icon
 import PropTypes from 'prop-types';
 
 const Navbar = ({ isAuthenticated }) => {
   const location = useLocation();
   const [isReportClicked, setIsReportClicked] = useState(false);
   const [mediaText, setMediaText] = useState("Media");
+  const [dashText, setDashText] = useState("Dash");
 
   useEffect(() => {
     const selectedOption = sessionStorage.getItem("selectedOption");
@@ -20,6 +21,7 @@ const Navbar = ({ isAuthenticated }) => {
   }, [location.pathname]);
 
   const isMediaOrDocsActive = location.pathname === '/media' || location.pathname === '/docs';
+  const isSaleDashOrPlacDashActive = location.pathname === '/saledash' || location.pathname === '/placdash';
   const isHome = location.pathname === '/' || location.pathname === '/home';
   const isSalesOrPlacement = location.pathname === '/sales' || location.pathname === '/placement';
   const isReportActive = isSalesOrPlacement;
@@ -51,7 +53,7 @@ const Navbar = ({ isAuthenticated }) => {
         <Link
           to={isSalesOrPlacement ? "/report" : "#"}
           onClick={handleReportClick}
-          className={`flex flex-col items-center text-sm px-4 py-2 rounded-full transition-colors duration-300
+          className={`flex flex-col items-center text-sm px-4 py-2 rounded-full transition-colors duration-300 
             ${isReportActive ? 'text-green-500' : isReportClicked ? 'text-red-500' : (isReportDisabled ? 'text-white' : 'text-white')}
             ${!isSalesOrPlacement ? 'pointer-events-none' : ''}`}
         >
@@ -60,7 +62,7 @@ const Navbar = ({ isAuthenticated }) => {
             Report
           </span>
         </Link>
-        
+
         {isReportDisabled && (
           <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs p-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
             Not Clickable
@@ -71,9 +73,8 @@ const Navbar = ({ isAuthenticated }) => {
       <div className="text-center">
         <Link
           to={isAuthenticated ? (mediaText === "Bills" ? "/media" : "/docs") : "/adminlogin"}
-          className={`flex flex-col items-center text-sm px-4 py-2 rounded-full transition-colors duration-300 ${
-            isMediaOrDocsActive ? 'text-green-500' : 'text-white'
-          }`}
+          className={`flex flex-col items-center text-sm px-4 py-2 rounded-full transition-colors duration-300 
+            ${isMediaOrDocsActive ? 'text-green-500' : 'text-white'}`}
         >
           <FaVideo size={24} className={isMediaOrDocsActive ? 'text-green-500' : 'text-white'} />
           <span className={isMediaOrDocsActive ? 'text-green-500' : 'text-white'}>
@@ -84,11 +85,14 @@ const Navbar = ({ isAuthenticated }) => {
 
       <div className="text-center">
         <Link
-          to="/spent"
-          className={`flex flex-col items-center text-sm px-4 py-2 rounded-full transition-colors duration-300 ${isProfileActive ? 'text-green-500' : 'text-white'}`}
+          to={isAuthenticated ? "/dashlogin" : "/dashlogin"}  // Always redirect to /dashlogin if not authenticated
+          className={`flex flex-col items-center text-sm px-4 py-2 rounded-full transition-colors duration-300 
+            ${isSaleDashOrPlacDashActive ? 'text-green-500' : 'text-white'}`}
         >
-          <FaUserAlt size={24} className={isProfileActive ? 'text-green-500' : 'text-white'} />
-          <span className={isProfileActive ? 'text-green-500' : 'text-white'}>Dashboard</span>
+          <FaChartLine size={24} className={isSaleDashOrPlacDashActive ? 'text-green-500' : 'text-white'} /> {/* Changed icon */}
+          <span className={isSaleDashOrPlacDashActive ? 'text-green-500' : 'text-white'}>
+            {dashText}
+          </span>
         </Link>
       </div>
     </div>

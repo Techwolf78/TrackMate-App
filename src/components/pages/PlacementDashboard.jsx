@@ -1,24 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import { FaChartBar, FaChevronDown, FaChevronUp, FaTimes } from "react-icons/fa"; // Importing arrow and cross icons
 import { Bar } from 'react-chartjs-2';
-import { FaChartBar } from "react-icons/fa";
-import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../../firebaseConfig';
-import { Link } from 'react-router-dom'; // Add Link for routing
-import { format } from 'date-fns'; // Importing date-fns to format date
+import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import userImage from "../../../public/user.png";
 
-ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
-
-const Dashboard = () => {
+const PlacementDashboard = () => {
   const [entries, setEntries] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 11;
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = () => {
-      const spentRef = ref(db, 'sales_spent/');
+      const spentRef = ref(db, 'plac_spent/');
       onValue(spentRef, (snapshot) => {
         const data = snapshot.val();
+        if (!data) {
+          console.error('No data found');
+          return;
+        }
         const loadedData = [];
         for (let key in data) {
           loadedData.push({
@@ -27,9 +30,10 @@ const Dashboard = () => {
           });
         }
         setEntries(loadedData);
+      }, (error) => {
+        console.error('Error fetching data:', error);
       });
     };
-
     fetchData();
   }, []);
 
@@ -109,7 +113,7 @@ const Dashboard = () => {
   // Function to format the timestamp to a human-readable date (dd/MM/yyyy)
   const formatDate = (timestamp) => {
     if (!timestamp || isNaN(timestamp)) {
-      return 'No date available'; // Show fallback message if date is invalid
+      return 'Invalid Date'; // Show fallback message if date is invalid
     }
     return format(new Date(timestamp), 'dd/MM/yyyy'); // Convert timestamp to a readable date format
   };
@@ -120,14 +124,54 @@ const Dashboard = () => {
         <h3 className="text-xl font-semibold text-gray-700 mb-4">Please open this section on a large screen only.</h3>
       </div>
       <div className="hidden md:block">
-        <h2 className="text-4xl font-bold text-left text-blue-600 flex items-center mb-4 sm:mb-0">
-          <FaChartBar className="mr-2 text-blue-600" size={30} />
-          Dashboard
-        </h2>
-        <div className="mb-4 flex justify-end">
-          <Link to="/clddata">
+        <div className="flex justify-between items-center mb-4 sm:mb-0">
+          <h2 className="text-4xl font-bold text-left text-blue-600 flex items-center">
+            <FaChartBar className="mr-2 text-blue-600" size={30} />
+            Placement Dashboard
+          </h2>
+
+          {/* Circular user image with dropdown and arrow */}
+          <div className="relative flex items-center">
+            <img
+              src={userImage} // Reference the imported image
+              alt="User"
+              className="w-10 h-10 rounded-full cursor-pointer"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Toggle dropdown visibility
+            />
+            <button
+              className="ml-2"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Toggle dropdown visibility
+            >
+              {isDropdownOpen ? (
+                <FaChevronUp size={20} className="text-gray-700" />
+              ) : (
+                <FaChevronDown size={20} className="text-gray-700" />
+              )}
+            </button>
+            {isDropdownOpen && (
+              <>
+                {/* Cross button to close dropdown */}
+                <FaTimes
+                  size={20}
+                  className="absolute left-0 top-0 text-gray-700 cursor-pointer"
+                  onClick={() => setIsDropdownOpen(false)} // Close dropdown when clicked
+                />
+                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg">
+                  <Link to="/dashlogin">
+                    <button className="w-full px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700">
+                      Logout
+                    </button>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="mb-4 flex justify-start">
+          <Link to="/companydata">
             <button className="px-6 py-3 text-white bg-indigo-600 rounded-lg shadow-lg hover:bg-indigo-700">
-              College Data
+              Company Data
             </button>
           </Link>
         </div>
@@ -142,6 +186,7 @@ const Dashboard = () => {
             <Bar data={compareBarData} options={options} />
           </div>
         </div>
+
         <div className="bg-white p-6 rounded-lg shadow-lg mt-8">
           <h3 className="text-xl font-semibold text-blue-700 mb-4">Saved Spent Data</h3>
           <table className="min-w-full table-auto">
@@ -154,7 +199,7 @@ const Dashboard = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Fuel</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Stay</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Toll</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">College</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Company</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Date</th>
               </tr>
             </thead>
@@ -169,8 +214,8 @@ const Dashboard = () => {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{getValueOrZero(entry.fuel)}</td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{getValueOrZero(entry.stay)}</td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{getValueOrZero(entry.toll)}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{entry.college || 'No College'}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatDate(entry.date)}</td> {/* Show formatted date */}
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{entry.company || 'No Company'}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatDate(entry.date)}</td> 
                   </tr>
                 ))
               ) : (
@@ -205,4 +250,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default PlacementDashboard;

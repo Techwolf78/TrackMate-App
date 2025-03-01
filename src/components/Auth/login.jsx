@@ -31,39 +31,51 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+  
     setLoading(true);
     setEmailError(""); // Reset email-specific error message
-
+  
     // Set the loading text animation for 2 seconds
     setTimeout(() => {
       setLoading(false);
       setLoadingText("Loading"); // Reset to default text after 2 seconds
     }, 2000); // Loader duration set to 2 seconds
-
+  
     try {
-      // Check if email is in the allowed list
+      // Check if email is in the allowed list for specific routes
       if (
-        email === "ajaypawargryphon@gmail.com" ||
-        email === "mrajaypawar207@gmail.com"
+        email === "ajay@gryphonacademy.co.in" ||
+        email === "nishad@gryphonacademy.co.in" ||
+        email === "dheeraj@gryphonacademy.co.in"
       ) {
         await signInWithEmailAndPassword(auth, email, password);
+        console.log("Successfully signed in!");
 
-        // Redirect based on email
-        if (email === "ajaypawargryphon@gmail.com") {
-          sessionStorage.setItem("userEmail", email);
-          navigate("/sales"); // Redirect to sales page
-        } else if (email === "mrajaypawar207@gmail.com") {
-          sessionStorage.setItem("userEmail", email);
-          navigate("/placement"); // Redirect to placement page
-        }
+        // Save the email in sessionStorage
+        sessionStorage.setItem("userEmail", email);
+        
+        // Navigate to the sales page for authorized users
+        navigate("/sales");
+      } else if (
+        email === "ajaypawargryphon@gmail.com" ||
+        email === "shashikant@gryphonacademy.co.in"
+      ) {
+        await signInWithEmailAndPassword(auth, email, password);
+        console.log("Successfully signed in!");
+
+        // Save the email in sessionStorage
+        sessionStorage.setItem("userEmail", email);
+        
+        // Navigate to the placement page for authorized users
+        navigate("/placement");
       } else {
-        // If email is not registered, show email-specific error message
-        setEmailError("Email is not registered. Contact Admin.");
+        setEmailError("Email is not registered for this platform. Contact Admin.");
         setLoading(false); // Stop loading when email is not found
       }
     } catch (error) {
       setLoading(false);
+      console.error("Login error:", error); // Log the error
+  
       if (error.code === "auth/wrong-password") {
         setError("Oops! The password you entered is incorrect.");
       } else if (error.code === "auth/user-not-found") {
@@ -95,7 +107,29 @@ const Login = () => {
   }, [loading]);
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gray-200 relative px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex justify-center items-center px-4 sm:px-6 lg:px-8 bg-gray-200 relative ">
+      {/* Back Button */}
+      <div className="absolute top-4 left-0 right-0 text-center">
+        <button
+          className="flex items-center px-4 sm:px-6 lg:px-8 justify-center text-blue-500 font-medium"
+          onClick={() => navigate("/")}
+        >
+          <svg
+            className="w-5 h-5 mr-2"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5M12 5l-7 7 7 7"></path>
+          </svg>
+          Back
+        </button>
+      </div>
+
       {/* Login Modal */}
       <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full sm:w-96 lg:w-1/3 z-10 relative overflow-hidden">
         <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-4 sm:mb-6 relative z-10">

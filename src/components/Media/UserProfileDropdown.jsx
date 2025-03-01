@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const ProfileDropdown = () => {
-  const email = localStorage.getItem("userEmail");  // Retrieve email from localStorage
+  const email = localStorage.getItem("userEmail"); // Retrieve email from localStorage
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -34,13 +34,16 @@ const ProfileDropdown = () => {
     try {
       const auth = getAuth();
       await signOut(auth);
-      console.log("User signed out");
+      console.log("Admin signed out");
 
       // Clear the selected option and email from sessionStorage and localStorage
       sessionStorage.removeItem("selectedOption"); // Clear selected option
       localStorage.removeItem("userEmail"); // Clear user email from localStorage
 
+      // Display success toast
       toast.success("Logged out successfully");
+
+      // Navigate to the admin login page
       navigate("/adminlogin");
     } catch (error) {
       console.error("Error signing out:", error);

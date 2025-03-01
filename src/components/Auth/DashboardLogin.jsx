@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth, signInWithEmailAndPassword } from "../../firebaseConfig";
 
-const AdminLogin = () => {
+const DashboardLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -35,15 +35,14 @@ const AdminLogin = () => {
       await signInWithEmailAndPassword(auth, email, password);
       setLoading(false);
   
-      // Store the selected option and email in sessionStorage under a unique key for Admin
-      sessionStorage.setItem(`admin_selectedOption_${email}`, selectedOption);
-      localStorage.setItem(`admin_userEmail_${email}`, email);  // Store the email in localStorage
+      // Store the selected option in sessionStorage under a unique key for Dashboard
+      sessionStorage.setItem(`dashboard_selectedOption_${email}`, selectedOption);
   
       // Navigate based on the selected option
-      if (selectedOption === "bills") {
-        navigate("/media"); // Navigate to /media for Bills
-      } else if (selectedOption === "placementDocs") {
-        navigate("/docs"); // Navigate to /docs for Placement Docs
+      if (selectedOption === "saledash") {
+        navigate("/saledash");
+      } else if (selectedOption === "placdash") {
+        navigate("/placdash");
       }
     } catch (error) {
       setLoading(false);
@@ -56,6 +55,7 @@ const AdminLogin = () => {
       }
     }
   };
+  
   
 
   return (
@@ -115,8 +115,8 @@ const AdminLogin = () => {
               className="mt-2 w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-shadow duration-300 shadow-sm hover:shadow-md"
             >
               <option value="">Select an option</option>
-              <option value="bills">Bills</option>
-              <option value="placementDocs">Placement Docs</option>
+              <option value="saledash">Sales</option>
+              <option value="placdash">Placement</option>
             </select>
           </div>
 
@@ -143,4 +143,4 @@ const AdminLogin = () => {
   );
 };
 
-export default AdminLogin;
+export default DashboardLogin;
