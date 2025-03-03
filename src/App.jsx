@@ -9,7 +9,7 @@ import Navbar from './components/navbar';
 import Landing from './components/pages/landing';
 import Login from "./components/Auth/login";
 import Forgetpassword from "./components/forgetpassword";
-import AdminLogin from "./components/Auth/AdminLogin";
+import AdminLogin from './components/Auth/AdminLogin.jsx';
 import Media from "./components/pages/media";
 import Spent from "./components/pages/SalesDashboard";
 import UnderConstruction from "./components/pages/underCont";
