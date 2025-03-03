@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaChartBar, FaChevronDown, FaChevronUp, FaTimes } from "react-icons/fa"; // Importing arrow and cross icons
+import React, { useState, useEffect, useRef } from 'react';
+import { FaChartBar } from "react-icons/fa";
 import { Bar } from 'react-chartjs-2';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../../firebaseConfig';
@@ -12,6 +12,7 @@ const PlacementDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 11;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null); // Ref for the dropdown
 
   useEffect(() => {
     const fetchData = () => {
@@ -118,52 +119,50 @@ const PlacementDashboard = () => {
     return format(new Date(timestamp), 'dd/MM/yyyy'); // Convert timestamp to a readable date format
   };
 
+  // Handle clicks outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto p-6 font-inter">
       <div className="block md:hidden bg-yellow-100 p-6 rounded-lg shadow-lg">
         <h3 className="text-xl font-semibold text-gray-700 mb-4">Please open this section on a large screen only.</h3>
       </div>
       <div className="hidden md:block">
-        <div className="flex justify-between items-center mb-4 sm:mb-0">
-          <h2 className="text-4xl font-bold text-left text-blue-600 flex items-center">
-            <FaChartBar className="mr-2 text-blue-600" size={30} />
-            Placement Dashboard
-          </h2>
+        <h2 className="text-4xl font-bold text-left text-blue-600 flex items-center mb-4 sm:mb-0">
+          <FaChartBar className="mr-2 text-blue-600" size={30} />
+          Placement Dashboard
+        </h2>
 
-          {/* Circular user image with dropdown and arrow */}
-          <div className="relative flex items-center">
+        <div className="flex justify-between items-center">
+          {/* Other content to the left */}
+
+          {/* User image section moved to the end */}
+          <div className="relative ml-auto" ref={dropdownRef}>
             <img
-              src={userImage} // Reference the imported image
+              src={userImage} // Replace with the path to your image
               alt="User"
               className="w-10 h-10 rounded-full cursor-pointer"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Toggle dropdown visibility
             />
-            <button
-              className="ml-2"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Toggle dropdown visibility
-            >
-              {isDropdownOpen ? (
-                <FaChevronUp size={20} className="text-gray-700" />
-              ) : (
-                <FaChevronDown size={20} className="text-gray-700" />
-              )}
-            </button>
+
             {isDropdownOpen && (
-              <>
-                {/* Cross button to close dropdown */}
-                <FaTimes
-                  size={20}
-                  className="absolute left-0 top-0 text-gray-700 cursor-pointer"
-                  onClick={() => setIsDropdownOpen(false)} // Close dropdown when clicked
-                />
-                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg">
-                  <Link to="/dashlogin">
-                    <button className="w-full px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700">
-                      Logout
-                    </button>
-                  </Link>
-                </div>
-              </>
+              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg">
+                <Link to="/dashlogin">
+                  <button className="w-full px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700">
+                    Logout
+                  </button>
+                </Link>
+              </div>
             )}
           </div>
         </div>

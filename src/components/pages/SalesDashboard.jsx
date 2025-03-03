@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { FaChartBar } from "react-icons/fa";
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
@@ -15,6 +15,7 @@ const SalesDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 11;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null); // Create a ref for the dropdown
 
   useEffect(() => {
     const fetchData = () => {
@@ -116,6 +117,19 @@ const SalesDashboard = () => {
     return format(new Date(timestamp), 'dd/MM/yyyy'); // Convert timestamp to a readable date format
   };
 
+  // Handle clicks outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto p-6 font-inter">
       <div className="block md:hidden bg-yellow-100 p-6 rounded-lg shadow-lg">
@@ -131,7 +145,7 @@ const SalesDashboard = () => {
           {/* Other content to the left */}
           
           {/* User image section moved to the end */}
-          <div className="relative ml-auto">
+          <div className="relative ml-auto" ref={dropdownRef}>
             <img
               src={image} // Replace with the path to your image
               alt="User"
