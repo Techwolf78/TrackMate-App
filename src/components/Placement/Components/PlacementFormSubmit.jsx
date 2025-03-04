@@ -13,34 +13,17 @@ function PlacementFormSubmit() {
   const [showErrorToast, setShowErrorToast] = useState(false);
 
   const handleSave = (spentData) => {
-    const {
-      allocatedAmount,
-      spentAmount,
-      visitType,
-      college,
-      additionalColleges,
-    } = spentData;
+    // Remove validation logic here to allow form submission without validation
+    console.log("Data Saved:", spentData);
 
-    // Validate that all required fields are filled
-    if (
-      allocatedAmount &&
-      spentAmount &&
-      visitType &&
-      (college || additionalColleges.length > 0)
-    ) {
-      console.log("Data Saved:", spentData);
+    // Close the modal and reset form fields
+    setIsModalOpen(false);
 
-      // Close the modal and reset form fields
-      setIsModalOpen(false);
+    // Show success toast after saving data
+    setShowSuccessToast(true);
 
-      // Show success toast after saving data
-      setShowSuccessToast(true);
-
-      // Hide success toast after 3 seconds
-      setTimeout(() => setShowSuccessToast(false), 3000);
-    } else {
-      alert("Please fill out all fields.");
-    }
+    // Hide success toast after 3 seconds
+    setTimeout(() => setShowSuccessToast(false), 3000);
   };
 
   const saveToFirebase = (fileData, folderName = "uploaded_files") => {
@@ -53,19 +36,19 @@ function PlacementFormSubmit() {
       minute: "2-digit",
       hour12: true,
     });
-  
+
     // Prepare the data to store in Firebase
     const dbData = {
-      secure_url: fileData.secure_url,   // The secure URL of the uploaded image
-      public_id: fileData.public_id,     // Cloudinary public ID
-      original_filename: fileData.original_filename, // Original filename
-      size: fileData.bytes,              // Size in bytes
-      format: fileData.format,           // Image format (JPG, PNG, etc.)
-      width: fileData.width,             // Image width (from Cloudinary)
-      height: fileData.height,           // Image height (from Cloudinary)
-      created_at: formattedDate,         // Formatted creation date
+      secure_url: fileData.secure_url,
+      public_id: fileData.public_id,
+      original_filename: fileData.original_filename,
+      size: fileData.bytes,
+      format: fileData.format,
+      width: fileData.width,
+      height: fileData.height,
+      created_at: formattedDate,
     };
-  
+
     // Save data to Firebase
     set(ref(db, `${folderName}/${Date.now()}`), dbData)
       .catch((error) => {
@@ -74,7 +57,6 @@ function PlacementFormSubmit() {
         setTimeout(() => setShowErrorToast(false), 3000);
       });
   };
-  
 
   return (
     <div className="flex justify-center font-inter items-center bg-white mb-10 pt-2 ">

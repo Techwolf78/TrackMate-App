@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../../firebaseConfig';
 import { useNavigate } from 'react-router-dom';  // Import useNavigate hook
-import CollegeTransModal from '../CollegeData.jsx/CollegeTransModal';  // Import the modal component
+import CollegeTransModal from '../CollegeData/CollegeTransModal';  // Import the modal component
 
 const CollegeData = () => {
   const [collegeData, setCollegeData] = useState([]);

@@ -2,52 +2,52 @@ import React, { useState, useEffect } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../../firebaseConfig';
 import { useNavigate } from 'react-router-dom';  // Import useNavigate hook
-import CollegeTransModal from '../CollegeData.jsx/CollegeTransModal';  // Import the modal component
+import CompanyTransModal from '../CompanyData/CompanyTransModal';  // Import the modal component
 
-const CollegeData = () => {
-  const [collegeData, setCollegeData] = useState([]);
-  const [selectedCollege, setSelectedCollege] = useState(null); // State to track selected college
+const CompanyData = () => {
+  const [companyData, setCompanyData] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState(null); // State to track selected company
   const [isModalOpen, setIsModalOpen] = useState(false); // State to track modal visibility
   const navigate = useNavigate();  // Initialize navigate
 
   useEffect(() => {
     const fetchData = () => {
-      const collegeRef = ref(db, 'plac_spent/');
-      onValue(collegeRef, (snapshot) => {
+      const companyRef = ref(db, 'plac_spent/');
+      onValue(companyRef, (snapshot) => {
         const data = snapshot.val();
         const aggregatedData = {};
 
-        // Aggregate data by college
+        // Aggregate data by company
         for (let key in data) {
-          const college = data[key];
-          const collegeName = college.college;
+          const company = data[key];
+          const companyName = company.company;
 
-          if (!aggregatedData[collegeName]) {
-            aggregatedData[collegeName] = {
+          if (!aggregatedData[companyName]) {
+            aggregatedData[companyName] = {
               allocatedAmount: 0,
               spentAmount: 0,
               transactionCount: 0,
-              transactions: [] // Store transactions for each college
+              transactions: [] // Store transactions for each company
             };
           }
 
           // Add to the totals
-          aggregatedData[collegeName].allocatedAmount += parseFloat(college.allocatedAmount) || 0;
-          aggregatedData[collegeName].spentAmount += parseFloat(college.spentAmount) || 0;
-          aggregatedData[collegeName].transactionCount += 1; // Count the number of transactions
-          aggregatedData[collegeName].transactions.push(college); // Store the individual transaction
+          aggregatedData[companyName].allocatedAmount += parseFloat(company.allocatedAmount) || 0;
+          aggregatedData[companyName].spentAmount += parseFloat(company.spentAmount) || 0;
+          aggregatedData[companyName].transactionCount += 1; // Count the number of transactions
+          aggregatedData[companyName].transactions.push(company); // Store the individual transaction
         }
 
         // Convert the aggregated data object to an array for rendering
-        const loadedData = Object.keys(aggregatedData).map((collegeName) => ({
-          college: collegeName,
-          allocatedAmount: aggregatedData[collegeName].allocatedAmount,
-          spentAmount: aggregatedData[collegeName].spentAmount,
-          transactionCount: aggregatedData[collegeName].transactionCount,
-          transactions: aggregatedData[collegeName].transactions, // Include the transactions
+        const loadedData = Object.keys(aggregatedData).map((companyName) => ({
+          company: companyName.replaceAll("_", " "), // Replace underscores with spaces
+          allocatedAmount: aggregatedData[companyName].allocatedAmount,
+          spentAmount: aggregatedData[companyName].spentAmount,
+          transactionCount: aggregatedData[companyName].transactionCount,
+          transactions: aggregatedData[companyName].transactions, // Include the transactions
         }));
 
-        setCollegeData(loadedData);
+        setCompanyData(loadedData);
       });
     };
 
@@ -79,14 +79,14 @@ const CollegeData = () => {
     navigate(-1);  // Go back to the previous page
   };
 
-  const handleRowClick = (college) => {
-    setSelectedCollege(college); // Set the clicked college
+  const handleRowClick = (company) => {
+    setSelectedCompany(company); // Set the clicked company
     setIsModalOpen(true); // Open the modal
   };
 
   const closeModal = () => {
     setIsModalOpen(false); // Close the modal
-    setSelectedCollege(null); // Clear the selected college
+    setSelectedCompany(null); // Clear the selected company
   };
 
   return (
@@ -106,7 +106,7 @@ const CollegeData = () => {
       <table className="min-w-full table-auto">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">College</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Company</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Allocated Amount</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Spent Amount</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-200">Remaining Amount</th>
@@ -116,20 +116,20 @@ const CollegeData = () => {
           </tr>
         </thead>
         <tbody>
-          {collegeData.length > 0 ? (
-            collegeData.map((college, index) => (
+          {companyData.length > 0 ? (
+            companyData.map((company, index) => (
               <tr
                 key={index}
                 className="bg-white border-b hover:bg-gray-100"
-                onClick={() => handleRowClick(college)} // Add click handler
+                onClick={() => handleRowClick(company)} // Add click handler
               >
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{college.college}</td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatNumber(college.allocatedAmount)}</td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatNumber(college.spentAmount)}</td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{getRemainingAmount(college.allocatedAmount, college.spentAmount)}</td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{getSpentPercentage(college.spentAmount, college.allocatedAmount)}</td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{college.transactionCount}</td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{getAvgSpentPerTransaction(college.spentAmount, college.transactionCount)}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{company.company}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatNumber(company.allocatedAmount)}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatNumber(company.spentAmount)}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{getRemainingAmount(company.allocatedAmount, company.spentAmount)}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{getSpentPercentage(company.spentAmount, company.allocatedAmount)}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{company.transactionCount}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{getAvgSpentPerTransaction(company.spentAmount, company.transactionCount)}</td>
               </tr>
             ))
           ) : (
@@ -141,9 +141,9 @@ const CollegeData = () => {
       </table>
 
       {/* Render the modal component if it's open */}
-      {isModalOpen && selectedCollege && (
-        <CollegeTransModal 
-          selectedCollege={selectedCollege} 
+      {isModalOpen && selectedCompany && (
+        <CompanyTransModal 
+          selectedCompany={selectedCompany} 
           closeModal={closeModal} 
         />
       )}
@@ -151,4 +151,4 @@ const CollegeData = () => {
   );
 };
 
-export default CollegeData;
+export default CompanyData;

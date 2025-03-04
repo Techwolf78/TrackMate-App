@@ -4,127 +4,151 @@ import { useState } from "react";
 import { ref, set } from "firebase/database";
 import { db } from "../../../firebaseConfig";
 import CompanyList from "../../Placement/Components/CompanyList";
-import { format } from "date-fns"; 
-import PlacementVisitCode from "../../Placement/Components/PlacementVisitCode"; 
+import { format } from "date-fns";
 
 const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
   const [allocatedAmount, setAllocatedAmount] = useState("");
   const [spentAmount, setSpentAmount] = useState("");
   const [visitType, setVisitType] = useState("");
-  const [college, setCollege] = useState("");
-  const [otherCollegeName, setOtherCollegeName] = useState("");
-  const [additionalColleges, setAdditionalColleges] = useState([]);
+  const [company, setCompany] = useState(""); // Changed from college to company
+  const [otherCompanyName, setOtherCompanyName] = useState(""); // Changed from otherCollegeName to otherCompanyName
+  const [additionalCompanies, setAdditionalCompanies] = useState([]); // Changed from additionalColleges to additionalCompanies
   const [food, setFood] = useState("");
   const [fuel, setFuel] = useState("");
   const [stay, setStay] = useState("");
   const [toll, setToll] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date()); 
-  const [visitCode, setVisitCode] = useState(""); // State for visit code
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isSubmitting, setIsSubmitting] = useState(false); // Loader state
 
   if (!isOpen) return null;
 
-  // Handle the change of visit code from PlacementVisitCode
-  const handleVisitCodeChange = (newCode) => {
-    setVisitCode(newCode);
+  const handleAddCompany = () => {
+    setAdditionalCompanies([...additionalCompanies, ""]);
   };
 
-  const handleAddCollege = () => {
-    setAdditionalColleges([...additionalColleges, ""]);
+  const handleCompanyChange = (index, value) => {
+    const newCompanies = [...additionalCompanies];
+    newCompanies[index] = value;
+    setAdditionalCompanies(newCompanies);
   };
 
-  const handleCollegeChange = (index, value) => {
-    const newColleges = [...additionalColleges];
-    newColleges[index] = value;
-    setAdditionalColleges(newColleges);
+  const handleDeleteCompany = (index) => {
+    const newCompanies = additionalCompanies.filter((_, i) => i !== index);
+    setAdditionalCompanies(newCompanies);
   };
 
-  const handleDeleteCollege = (index) => {
-    const newColleges = additionalColleges.filter((_, i) => i !== index);
-    setAdditionalColleges(newColleges);
-  };
+  // Function to save each record and handle retry logic
+  const saveRecordWithRetry = async (spentData, retries = 3) => {
+    const newSpentRef = ref(db, "plac_spent/" + Date.now());
+    try {
+      await set(newSpentRef, spentData); // Try to save the record
+      console.log("Data saved:", spentData);
+      return true; // Return true if save is successful
+    } catch (error) {
+      console.error("Error saving data:", error);
 
-  const handleFormSubmit = () => {
-    // If no date is selected, use today's date
-    const dateToSave = selectedDate.getTime(); 
-
-    if (!allocatedAmount || !spentAmount || !visitType || !college || !visitCode) {
-      alert("Please fill in all the required fields.");
-      return;
+      // Retry logic
+      if (retries > 0) {
+        console.log(`Retrying... ${retries} attempts remaining`);
+        return await saveRecordWithRetry(spentData, retries - 1);
+      } else {
+        console.log("Failed after multiple attempts.");
+        return false; // Return false if all retries fail
+      }
     }
+  };
 
-    // Calculate total colleges including main and additional colleges
-    const totalColleges =
-      additionalColleges.length +
-      (college === "Other" ? 1 : 0) +
-      (college !== "" && college !== "Other" ? 1 : 0);
+  const handleFormSubmit = async () => {
+    setIsSubmitting(true); // Start loader
+
+    const dateToSave = selectedDate.getTime();
+
+    // Remove all validation checks. The form will submit regardless of field content.
+
+    // Convert inputs to numbers for calculations (they will default to 0 if empty)
+    const allocatedAmountNum = parseFloat(allocatedAmount) || 0;
+    const spentAmountNum = parseFloat(spentAmount) || 0;
+    const foodNum = parseFloat(food) || 0;
+    const fuelNum = parseFloat(fuel) || 0;
+    const stayNum = parseFloat(stay) || 0;
+    const tollNum = parseFloat(toll) || 0;
+
+    // Calculate total companies including main and additional companies
+    const totalCompanies =
+      additionalCompanies.length +
+      (company === "Other" ? 1 : 0) +
+      (company !== "" && company !== "Other" ? 1 : 0);
 
     // Calculate split amounts for food, fuel, stay, and toll
-    const foodSplit = (parseFloat(food) || 0) / totalColleges;
-    const fuelSplit = (parseFloat(fuel) || 0) / totalColleges;
-    const staySplit = (parseFloat(stay) || 0) / totalColleges;
-    const tollSplit = (parseFloat(toll) || 0) / totalColleges;
+    const foodSplit = foodNum / totalCompanies;
+    const fuelSplit = fuelNum / totalCompanies;
+    const staySplit = stayNum / totalCompanies;
+    const tollSplit = tollNum / totalCompanies;
 
     const spentDataArray = [];
 
-    const mainCollege = college === "Other" ? otherCollegeName : college;
-    if (college !== "") {
+    const mainCompany = company === "Other" ? otherCompanyName : company;
+    if (company !== "") {
       spentDataArray.push({
-        allocatedAmount: allocatedAmount / totalColleges,
-        spentAmount: spentAmount / totalColleges,
+        allocatedAmount: allocatedAmountNum / totalCompanies,
+        spentAmount: spentAmountNum / totalCompanies,
         visitType,
-        college: mainCollege, 
+        company: mainCompany,
         food: foodSplit,
         fuel: fuelSplit,
         stay: staySplit,
         toll: tollSplit,
-        date: dateToSave, 
-        visitCode, 
+        date: dateToSave,
       });
     }
 
-    additionalColleges.forEach((collegeName) => {
+    additionalCompanies.forEach((companyName) => {
       spentDataArray.push({
-        allocatedAmount: allocatedAmount / totalColleges,
-        spentAmount: spentAmount / totalColleges,
+        allocatedAmount: allocatedAmountNum / totalCompanies,
+        spentAmount: spentAmountNum / totalCompanies,
         visitType,
-        college: collegeName, 
+        company: companyName,
         food: foodSplit,
         fuel: fuelSplit,
         stay: staySplit,
         toll: tollSplit,
-        date: dateToSave, 
-        visitCode, 
+        date: dateToSave,
       });
     });
 
-    spentDataArray.forEach((spentData) => {
-      const newSpentRef = ref(db, "plac_spent/" + Date.now());
-      set(newSpentRef, spentData)
-        .then(() => {
-          console.log("Data saved successfully!");
-          handleSave(spentData);
-        })
-        .catch((error) => {
-          console.error("Error saving data:", error);
-        });
-    });
+    // Submit each record one by one with retries
+    const allSaveResults = [];
+    for (let i = 0; i < spentDataArray.length; i++) {
+      const spentData = spentDataArray[i];
+      const saveResult = await saveRecordWithRetry(spentData); // Wait for each save attempt
+      allSaveResults.push(saveResult);
+    }
 
-    // Reset the form after submission
+    // Check if all records were saved successfully
+    if (allSaveResults.every((result) => result)) {
+      console.log("All data saved successfully!");
+      handleSave(spentDataArray); // Call the callback to handle the success
+    } else {
+      console.log("Some records failed to save. Please try again.");
+    }
+
+    // Reset form fields after saving
     setAllocatedAmount("");
     setSpentAmount("");
     setVisitType("");
-    setCollege("");
-    setOtherCollegeName("");
-    setAdditionalColleges([]);
+    setCompany("");
+    setOtherCompanyName("");
+    setAdditionalCompanies([]);
     setFood("");
     setFuel("");
     setStay("");
     setToll("");
-    setVisitCode(""); // Reset visit code
+    
+    setIsSubmitting(false); // Stop loader
   };
 
   const formatDate = (date) => {
-    return format(date, "dd/MM/yyyy"); 
+    return format(date, "dd/MM/yyyy");
   };
 
   return (
@@ -142,9 +166,6 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
         </h3>
 
         <div className="space-y-3">
-          {/* Pass onCodeChange to PlacementVisitCode */}
-          <PlacementVisitCode onCodeChange={handleVisitCodeChange} />
-
           <select
             value={visitType}
             onChange={(e) => setVisitType(e.target.value)}
@@ -156,36 +177,36 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
           </select>
 
           <select
-            value={college}
-            onChange={(e) => setCollege(e.target.value)}
+            value={company}
+            onChange={(e) => setCompany(e.target.value)} // Changed college to company
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
           >
             <option value="">Select Company</option>
             <CompanyList />
           </select>
 
-          {college === "Other" && (
+          {company === "Other" && (
             <input
               type="text"
-              value={otherCollegeName}
-              onChange={(e) => setOtherCollegeName(e.target.value)}
+              value={otherCompanyName}
+              onChange={(e) => setOtherCompanyName(e.target.value)} // Changed from otherCollegeName to otherCompanyName
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
-              placeholder="Enter Other College Name"
+              placeholder="Enter Other Company Name"
             />
           )}
 
           {visitType === "Multiple Visit" &&
-            additionalColleges.map((college, index) => (
+            additionalCompanies.map((company, index) => (
               <div key={index} className="flex items-center space-x-1">
                 <input
                   type="text"
-                  value={college}
-                  onChange={(e) => handleCollegeChange(index, e.target.value)}
+                  value={company}
+                  onChange={(e) => handleCompanyChange(index, e.target.value)} // Changed from handleCollegeChange to handleCompanyChange
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
-                  placeholder={`College ${index + 2}`}
+                  placeholder={`Company ${index + 2}`}
                 />
                 <button
-                  onClick={() => handleDeleteCollege(index)}
+                  onClick={() => handleDeleteCompany(index)} // Changed from handleDeleteCollege to handleDeleteCompany
                   className="text-red-500 hover:text-red-700 transition text-sm"
                 >
                   ✖
@@ -195,10 +216,10 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
 
           {visitType === "Multiple Visit" && (
             <button
-              onClick={handleAddCollege}
+              onClick={handleAddCompany} // Changed from handleAddCollege to handleAddCompany
               className="w-full p-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition text-sm"
             >
-              Add College
+              Add Company
             </button>
           )}
 
@@ -209,7 +230,6 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
             placeholder="Allocated Amount"
           />
-
           <input
             type="number"
             value={spentAmount}
@@ -217,52 +237,49 @@ const PlacementSpentModal = ({ isOpen, onClose, handleSave }) => {
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
             placeholder="Spent Amount"
           />
-
           <input
             type="number"
             value={food}
             onChange={(e) => setFood(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
-            placeholder="Food Amount"
+            placeholder="Food"
           />
-
           <input
             type="number"
             value={fuel}
             onChange={(e) => setFuel(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
-            placeholder="Fuel Amount"
+            placeholder="Fuel"
           />
-
           <input
             type="number"
             value={stay}
             onChange={(e) => setStay(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
-            placeholder="Stay Amount"
+            placeholder="Stay"
           />
-
           <input
             type="number"
             value={toll}
             onChange={(e) => setToll(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none transition text-sm"
-            placeholder="Toll Amount"
+            placeholder="Toll"
           />
-        </div>
 
-        <div className="mt-4 flex justify-between">
+          {/* Loader */}
+          {isSubmitting && (
+            <div className="w-full flex justify-center items-center space-x-2">
+              <div className="animate-spin w-6 h-6 border-4 border-t-4 border-indigo-500 border-solid rounded-full"></div>
+              <p>Submitting...</p>
+            </div>
+          )}
+
           <button
-            className="bg-gray-300 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-400 transition text-sm"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            className="bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-600 transition text-sm"
             onClick={handleFormSubmit}
+            className="w-full p-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition text-sm"
+            disabled={isSubmitting}
           >
-            Save
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
         </div>
       </div>
