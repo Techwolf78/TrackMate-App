@@ -2,22 +2,22 @@ import PropTypes from "prop-types";
 import { useState } from "react";
 import { ref, set } from "firebase/database";
 import { db } from "../../../firebaseConfig";
-import CollegeList from "./CollegeList"; // Kept CollegeList as is
+import CollegeList from "./CollegeList"; // Import the CollegeList component
 import { format } from "date-fns"; // Using date-fns for date formatting
 
 const SalesSpentModal = ({ isOpen, onClose, handleSave }) => {
   const [allocatedAmount, setAllocatedAmount] = useState("");
   const [spentAmount, setSpentAmount] = useState("");
   const [visitType, setVisitType] = useState("");
-  const [college, setCollege] = useState(""); // Keeping the College terminology
-  const [otherCollegeName, setOtherCollegeName] = useState(""); // Keeping the College terminology
-  const [additionalColleges, setAdditionalColleges] = useState([]); // Keeping the College terminology
+  const [college, setCollege] = useState("");
+  const [otherCollegeName, setOtherCollegeName] = useState("");
+  const [additionalColleges, setAdditionalColleges] = useState([]);
   const [food, setFood] = useState("");
   const [fuel, setFuel] = useState("");
   const [stay, setStay] = useState("");
   const [toll, setToll] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today's date
-  const [isSubmitting, setIsSubmitting] = useState(false); // Loader state
+  const [loading, setLoading] = useState(false); // Loading state to show when submitting
 
   if (!isOpen) return null;
 
@@ -36,102 +36,88 @@ const SalesSpentModal = ({ isOpen, onClose, handleSave }) => {
     setAdditionalColleges(newColleges);
   };
 
-  // Retry logic for saving the data
-  const saveRecordWithRetry = async (spentData, retries = 3) => {
-    const newSpentRef = ref(db, "plac_spent/" + Date.now()); // Firebase reference for plac_spent
+  // Function to handle saving a single record to Firebase with retry logic
+  const saveRecord = async (spentData) => {
+    const newSpentRef = ref(db, "sales_spent/" + Date.now());
     try {
-      await set(newSpentRef, spentData); // Try to save the record
-      console.log("Data saved:", spentData);
-      return true; // Return true if save is successful
+      await set(newSpentRef, spentData);
+      console.log("Data saved successfully!");
+      handleSave(spentData); // Call the success handler
     } catch (error) {
       console.error("Error saving data:", error);
-
-      // Retry logic
-      if (retries > 0) {
-        console.log(`Retrying... ${retries} attempts remaining`);
-        return await saveRecordWithRetry(spentData, retries - 1);
-      } else {
-        console.log("Failed after multiple attempts.");
-        return false; // Return false if all retries fail
-      }
+      // Retry logic: Retry saving the record if there's an error
+      setTimeout(() => {
+        saveRecord(spentData); // Retry after 2 seconds (adjust as needed)
+      }, 2000); // Retry after 2 seconds (adjust as needed)
     }
   };
 
+  // Handle form submission and sequentially submit data
   const handleFormSubmit = async () => {
-    setIsSubmitting(true); // Start loader
+    // If no date is selected, use today's date
+    const dateToSave = selectedDate.getTime(); // Convert date to timestamp
 
-    const dateToSave = selectedDate.getTime(); // Convert selected date to timestamp
+    // Basic validation before submitting the form
+    if (!allocatedAmount || !spentAmount || !visitType || !college) {
+      alert("Please fill in all the required fields.");
+      return;
+    }
 
-    // Convert inputs to numbers for calculations (they will default to 0 if empty)
-    const allocatedAmountNum = parseFloat(allocatedAmount) || 0;
-    const spentAmountNum = parseFloat(spentAmount) || 0;
-    const foodNum = parseFloat(food) || 0;
-    const fuelNum = parseFloat(fuel) || 0;
-    const stayNum = parseFloat(stay) || 0;
-    const tollNum = parseFloat(toll) || 0;
-
-    // Calculate total colleges (including main and additional colleges)
+    // Calculate the total number of colleges (including the main college and additional colleges)
     const totalColleges =
       additionalColleges.length +
       (college === "Other" ? 1 : 0) +
       (college !== "" && college !== "Other" ? 1 : 0);
 
-    // Calculate split amounts for food, fuel, stay, and toll
-    const foodSplit = foodNum / totalColleges;
-    const fuelSplit = fuelNum / totalColleges;
-    const staySplit = stayNum / totalColleges;
-    const tollSplit = tollNum / totalColleges;
+    // Calculate the split amounts for food, fuel, stay, and toll
+    const foodSplit = (parseFloat(food) || 0) / totalColleges;
+    const fuelSplit = (parseFloat(fuel) || 0) / totalColleges;
+    const staySplit = (parseFloat(stay) || 0) / totalColleges;
+    const tollSplit = (parseFloat(toll) || 0) / totalColleges;
 
+    // Create an array to hold the spent data for each college
     const spentDataArray = [];
 
     // Add the main college (or selected college)
     const mainCollege = college === "Other" ? otherCollegeName : college;
-    if (college !== "") {
+    if (college !== "") {  // Ensure the selected college is added
       spentDataArray.push({
-        allocatedAmount: allocatedAmountNum / totalColleges,
-        spentAmount: spentAmountNum / totalColleges,
+        allocatedAmount: allocatedAmount / totalColleges,
+        spentAmount: spentAmount / totalColleges,
         visitType,
-        college: mainCollege,
+        college: mainCollege, // Save the selected college
         food: foodSplit,
         fuel: fuelSplit,
         stay: staySplit,
         toll: tollSplit,
-        date: dateToSave,
+        date: dateToSave, // Save the selected date as timestamp
       });
     }
 
     // Add the additional colleges
     additionalColleges.forEach((collegeName) => {
       spentDataArray.push({
-        allocatedAmount: allocatedAmountNum / totalColleges,
-        spentAmount: spentAmountNum / totalColleges,
+        allocatedAmount: allocatedAmount / totalColleges,
+        spentAmount: spentAmount / totalColleges,
         visitType,
-        college: collegeName,
+        college: collegeName, // This is for additional colleges
         food: foodSplit,
         fuel: fuelSplit,
         stay: staySplit,
         toll: tollSplit,
-        date: dateToSave,
+        date: dateToSave, // Save the selected date as timestamp
       });
     });
 
-    // Submit each record one by one with retries
-    const allSaveResults = [];
+    // Set loading state to true
+    setLoading(true);
+
+    // Submit each record one by one
     for (let i = 0; i < spentDataArray.length; i++) {
-      const spentData = spentDataArray[i];
-      const saveResult = await saveRecordWithRetry(spentData); // Wait for each save attempt
-      allSaveResults.push(saveResult);
+      await saveRecord(spentDataArray[i]);
     }
 
-    // Check if all records were saved successfully
-    if (allSaveResults.every((result) => result)) {
-      console.log("All data saved successfully!");
-      handleSave(spentDataArray); // Call the callback to handle the success
-    } else {
-      console.log("Some records failed to save. Please try again.");
-    }
-
-    // Reset form fields after saving
+    // Reset the form fields after submission
     setAllocatedAmount("");
     setSpentAmount("");
     setVisitType("");
@@ -143,7 +129,8 @@ const SalesSpentModal = ({ isOpen, onClose, handleSave }) => {
     setStay("");
     setToll("");
 
-    setIsSubmitting(false); // Stop loader
+    // Set loading state to false after submission
+    setLoading(false);
   };
 
   // Format the date to DD/MM/YYYY using date-fns
@@ -282,12 +269,18 @@ const SalesSpentModal = ({ isOpen, onClose, handleSave }) => {
           <button
             className="bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-600 transition text-sm"
             onClick={handleFormSubmit}
-            disabled={isSubmitting} // Disable submit button while submitting
+            disabled={loading} // Disable the button when loading
           >
-            {isSubmitting ? "Submitting..." : "Save"}
+            {loading ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
+
+      {loading && (
+        <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50">
+          <div className="loader"></div> {/* Replace with your loader component */}
+        </div>
+      )}
     </div>
   );
 };
