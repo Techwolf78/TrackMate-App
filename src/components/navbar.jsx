@@ -72,7 +72,7 @@ const Navbar = ({ isAuthenticated }) => {
 
       <div className="text-center">
         <Link
-          to={isAuthenticated ? (mediaText === "Bills" ? "/media" : "/docs") : "/adminlogin"}
+          to={isAuthenticated ? (mediaText === "Bills" ? "/docs" : "/media") : "/adminlogin"}
           className={`flex flex-col items-center text-sm px-4 py-2 rounded-full transition-colors duration-300 
             ${isMediaOrDocsActive ? 'text-green-500' : 'text-white'}`}
         >

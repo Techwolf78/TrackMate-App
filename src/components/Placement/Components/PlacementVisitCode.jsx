@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { ref, get, set, push } from "firebase/database";
+import { ref, get } from "firebase/database"; // Removed unused imports
 import { db } from "../../../firebaseConfig";
+import PropTypes from 'prop-types';
 
 // Function to get the last placement code from the most recent transaction
 const getLastPlacementCode = async () => {
@@ -63,6 +64,11 @@ const PlacementVisitCode = ({ onCodeChange }) => {
       />
     </div>
   );
+};
+
+// PropTypes validation
+PlacementVisitCode.propTypes = {
+  onCodeChange: PropTypes.func.isRequired,
 };
 
 export default PlacementVisitCode;
