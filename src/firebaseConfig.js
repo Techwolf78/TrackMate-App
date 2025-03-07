@@ -3,8 +3,9 @@ import { getStorage } from "firebase/storage";
 import { getDatabase } from "firebase/database";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 
+// Correct the firebaseConfig structure
 const firebaseConfig = {
-  apiKey: "AIzaSyCXx4-4zpjt0C6em8ZmhVruGYHc9AJsENs",
+  apiKey: import.meta.env.VITE_GOOGLE_API_KEY, // Use the VITE_ prefix here
   authDomain: "visit-app-98ce3.firebaseapp.com",
   databaseURL: "https://visit-app-98ce3-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "visit-app-98ce3",
