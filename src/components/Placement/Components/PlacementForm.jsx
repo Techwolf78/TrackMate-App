@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ref, get, set } from "firebase/database"; // Firebase database imports
 import { db } from "../../../firebaseConfig"; // Firebase configuration
-import { auth } from "../../../firebaseConfig"; // Firebase auth import
-import { signOut } from "firebase/auth"; // Firebase sign-out method
+import UserProfile from "./PlacementUserDropdown"; // Import the new UserProfile component
 
 function PlacementForm() {
   const [formData, setFormData] = useState({
@@ -27,10 +26,8 @@ function PlacementForm() {
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility
   const [isLoading, setIsLoading] = useState(false); // Loading state
   const [successMessage, setSuccessMessage] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false); // Track dropdown state
   const [visitCode, setVisitCode] = useState(""); // Visit Code state
 
-  const dropdownRef = useRef(null); // Create a ref for the dropdown
   const navigate = useNavigate();
 
   // Function to get the last visit code from Firebase
@@ -49,10 +46,7 @@ function PlacementForm() {
     const num = parseInt(lastCode.split('_')[2], 10); // Change index to 2 (the number after "Placement_Visit_")
     const nextCodeNum = num + 1; // Increment the number
     return `Placement_Visit_${String(nextCodeNum).padStart(2, '0')}`; // Zero-pad the number for consistent formatting
-
   };
-  
-
 
   // Fetch the last visit code and set the new visit code
   useEffect(() => {
@@ -168,19 +162,6 @@ function PlacementForm() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth); // Firebase logout
-      navigate("/home"); // Redirect to login page after logout
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
-
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen); // Toggle dropdown visibility
-  };
-
   const handleBack = () => {
     navigate("/home");
   };
@@ -222,31 +203,9 @@ function PlacementForm() {
 
           {/* Visit Code */}
           <div className="text-sm font-semibold">{visitCode}</div>
-          {/* User Profile Circle */}
-          <div className="relative">
-            <div
-              className="w-10 h-10 rounded-full bg-blue-100 cursor-pointer flex items-center justify-center text-white"
-              onClick={toggleDropdown} // Toggle the dropdown on click
-            >
-              <img
-                src="/user.png" // Reference to the image in the public folder
-                alt="Profile"
-                className="w-full h-full object-cover rounded-full"
-              />
-            </div>
 
-            {/* Dropdown for Logout */}
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-md w-32">
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
+          {/* User Profile Component */}
+          <UserProfile /> 
         </div>
         
         {/* All your form fields go here */}

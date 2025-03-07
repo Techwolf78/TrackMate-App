@@ -37,12 +37,7 @@ function SalesUserDropdown() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <div className="flex items-center space-x-2">
-        {/* Display the welcome message with the username, visible only on larger screens */}
-        <span className="text-lg font-semibold text-blue-600 hidden sm:block">
-          Welcome <span className="font-extrabold">{username}</span>!
-        </span>
-
+      <div className="flex flex-row-reverse items-center space-x-2 sm:space-x-4">
         {/* Display the user profile image */}
         <div
           className="w-10 h-10 rounded-full bg-blue-100 cursor-pointer flex items-center justify-center text-white"
@@ -56,6 +51,11 @@ function SalesUserDropdown() {
             className="w-full h-full object-cover rounded-full"
           />
         </div>
+
+        {/* Display the welcome message with the username, visible only on larger screens */}
+        <span className="text-lg font-semibold text-blue-600 hidden sm:block">
+          Welcome <span className="font-extrabold">{username}</span>!
+        </span>
       </div>
 
       {dropdownOpen && (

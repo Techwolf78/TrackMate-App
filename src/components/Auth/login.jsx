@@ -52,7 +52,7 @@ const Login = () => {
         console.log("Successfully signed in!");
 
         // Save the email in sessionStorage
-        sessionStorage.setItem("userEmail", email);
+        sessionStorage.setItem("userSale", email);
         
         // Navigate to the sales page for authorized users
         navigate("/sales");
@@ -64,7 +64,7 @@ const Login = () => {
         console.log("Successfully signed in!");
 
         // Save the email in sessionStorage
-        sessionStorage.setItem("userEmail", email);
+        sessionStorage.setItem("userPlac", email);
         
         // Navigate to the placement page for authorized users
         navigate("/placement");
