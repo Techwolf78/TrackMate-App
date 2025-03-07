@@ -22,23 +22,23 @@ Follow these steps to get the project up and running on your local machine.
 
 ### 1. Clone the repository
 
-```bash
-git clone https://github.com/yourusername/your-repo-name.git
-cd your-repo-name
-2. Install dependencies
+```
+git clone https://github.com/Techwolf78/TrackMate-App.git
+cd TRACKER-APP
+```
+### 2. Install dependencies
 Make sure you have Node.js installed, then run:
 
-bash
-Copy
+```
 npm install
+```
 This will install all the required dependencies, including React, Firebase, and Tailwind CSS.
 
-3. Set up Firebase
+### 3. Set up Firebase
 To use Firebase authentication, create a Firebase project and set up authentication by following the instructions in the Firebase Docs.
 
 Add your Firebase configuration to firebaseConfig.js and replace the placeholder values with your actual Firebase project configuration.
-javascript
-Copy
+```
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
@@ -56,59 +56,34 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 export { auth };
-4. Tailwind CSS Configuration
+```
+### 4. Tailwind CSS Configuration
 If you haven't already configured Tailwind CSS in your React project, you can follow the official Tailwind setup guide: Tailwind CSS Installation.
 
 Make sure to add the necessary files and configurations for Tailwind to work correctly in your project.
 
-5. Run the application
-bash
-Copy
+### 5. Run the application
+```
 npm start
+```
 This will start the development server, and you can view the component in action in your browser at http://localhost:3000.
 
-Component Overview
-SalesUserDropdown Component
-This component handles the following:
 
-Displays the user’s profile image with a circular design.
-Shows the welcome message with the username based on the email from session storage, formatted as the part before "@".
-Handles the logout functionality by calling Firebase’s signOut method and navigating the user back to the homepage.
-Dropdown behavior: The dropdown will be toggled when clicking on the profile image. It also includes logic to close the dropdown if the user clicks outside of it.
-Responsiveness: The welcome message will only be visible on larger screens (starting from the sm breakpoint).
-Key Features and Styles
-Flexbox Layout:
-Uses Tailwind’s flex, items-center, space-x, and flex-row-reverse to position elements properly in a horizontal layout.
-Responsive Design:
-The welcome message visibility is controlled with hidden sm:block to ensure it appears on larger screens only.
-Dropdown Menu:
-Includes a simple dropdown menu with a Logout button, which is triggered when clicking the profile image.
-Example Usage
-Here is how you can use the SalesUserDropdown component in your React project:
-
-javascript
-Copy
-import SalesUserDropdown from './components/SalesUserDropdown';
-
-function App() {
-  return (
-    <div className="App">
-      <SalesUserDropdown />
-    </div>
-  );
-}
-
-export default App;
-Contributing
+### Contributing
 Fork the repository.
+
 Create a new branch (git checkout -b feature/your-feature).
+
 Commit your changes (git commit -am 'Add new feature').
+
 Push to the branch (git push origin feature/your-feature).
+
 Open a pull request.
-License
+
+### License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-Acknowledgments
+### Acknowledgments
 React for building the UI.
 Tailwind CSS for utility-first CSS styling.
 Firebase for authentication handling.
