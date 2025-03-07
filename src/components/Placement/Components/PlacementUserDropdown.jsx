@@ -53,7 +53,7 @@ function SalesUserDropdown() {
         </div>
 
         {/* Display the welcome message with the username, visible only on larger screens */}
-        <span className="text-lg font-semibold text-blue-600 hidden sm:block">
+        <span className="text-lg font-semibold text-blue-600 hidden sm:block ">
           Welcome <span className="font-extrabold">{username}</span>!
         </span>
       </div>
