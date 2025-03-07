@@ -69,7 +69,7 @@ npm start
 This will start the development server, and you can view the component in action in your browser at http://localhost:3000.
 
 
-### Contributing
+### 6. Contributing
 Fork the repository.
 
 Create a new branch (git checkout -b feature/your-feature).
@@ -80,7 +80,7 @@ Push to the branch (git push origin feature/your-feature).
 
 Open a pull request.
 
-### License
+### 7. License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ### Acknowledgments
