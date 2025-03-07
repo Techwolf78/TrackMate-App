@@ -5,14 +5,14 @@ import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "fir
 
 // Correct the firebaseConfig structure
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_GOOGLE_API_KEY, // Use the VITE_ prefix here
-  authDomain: "visit-app-98ce3.firebaseapp.com",
-  databaseURL: "https://visit-app-98ce3-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "visit-app-98ce3",
-  storageBucket: "visit-app-98ce3.firebasestorage.app",
-  messagingSenderId: "253059760151",
-  appId: "1:253059760151:web:3a726e6c9414969076dc52",
-  measurementId: "G-J94K7M9HF0"
+  apiKey: "AIzaSyCDLL_kOgfDZmGJwya2RUMUcSak4axjL6c",
+  authDomain: "visit-app-68717.firebaseapp.com",
+  databaseURL: "https://visit-app-68717-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId: "visit-app-68717",
+  storageBucket: "visit-app-68717.firebasestorage.app",
+  messagingSenderId: "847779288690",
+  appId: "1:847779288690:web:0e4bd74d33618f563fd4eb",
+  measurementId: "G-L3DGJQEM2W"
 };
 
 const app = initializeApp(firebaseConfig);
