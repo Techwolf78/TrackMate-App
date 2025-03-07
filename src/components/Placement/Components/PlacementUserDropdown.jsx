@@ -8,13 +8,13 @@ function SalesUserDropdown() {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  // Get the userSale from session storage
-  const userSale = sessionStorage.getItem('userSale');
+  // Get the userPlac from session storage
+  const userPlac = sessionStorage.getItem('userPlac');
 
   // Extract the part before "@" in the email address and capitalize the first letter
-  const username = userSale
-    ? userSale.split('@')[0].charAt(0).toUpperCase() + userSale.split('@')[0].slice(1)
-    : 'Guest'; // Default to 'Guest' if userSale is not available
+  const username = userPlac
+    ? userPlac.split('@')[0].charAt(0).toUpperCase() + userPlac.split('@')[0].slice(1)
+    : 'Guest'; // Default to 'Guest' if userPlac is not available
 
   const handleLogout = async () => {
     try {
