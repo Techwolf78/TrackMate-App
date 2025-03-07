@@ -5,7 +5,7 @@ import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "fir
 
 // Correct the firebaseConfig structure
 const firebaseConfig = {
-  VITE_GOOGLE_API_KEY: "AIzaSyCDLL_kOgfDZmGJwya2RUMUcSak4axjL6c",
+  apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
   authDomain: "visit-app-68717.firebaseapp.com",
   databaseURL: "https://visit-app-68717-default-rtdb.asia-southeast1.firebasedatabase.app/",
   projectId: "visit-app-68717",
