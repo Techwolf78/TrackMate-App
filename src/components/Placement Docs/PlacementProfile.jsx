@@ -1,16 +1,19 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import { FaEllipsisV, FaSignOutAlt } from "react-icons/fa";
 import { getAuth, signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
-const ProfileDropdown = () => {
-  const email = localStorage.getItem("userEmail");  // Retrieve email from localStorage
+const PlacementProfileDropdown = () => {
+  const auth = getAuth();
+  const navigate = useNavigate();
+  const dropdownRef = useRef(null);
+
+  // Get the email from localStorage using the same key format used during login
+  const email = localStorage.getItem(`admin_userEmail_${auth.currentUser?.email}`);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-  const navigate = useNavigate();
 
   // Toggle dropdown visibility
   const toggleDropdown = () => setIsDropdownOpen((prevState) => !prevState);
@@ -22,7 +25,7 @@ const ProfileDropdown = () => {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -32,15 +35,19 @@ const ProfileDropdown = () => {
   // Handle sign out
   const handleLogout = async () => {
     try {
-      const auth = getAuth();
       await signOut(auth);
       console.log("User signed out");
 
-      // Clear the selected option and email from sessionStorage and localStorage
-      sessionStorage.removeItem("selectedOption"); // Clear selected option
-      localStorage.removeItem("userEmail"); // Clear user email from localStorage
+      // Remove the email from localStorage dynamically based on the logged-in user
+      localStorage.removeItem(`admin_userEmail_${auth.currentUser?.email}`);
 
+      // Clear selected option
+      sessionStorage.removeItem(`admin_selectedOption_${auth.currentUser?.email}`);
+
+      // Display success toast
       toast.success("Logged out successfully");
+
+      // Navigate to the admin login page
       navigate("/adminlogin");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -101,8 +108,8 @@ const ProfileDropdown = () => {
   );
 };
 
-ProfileDropdown.propTypes = {
-  email: PropTypes.string.isRequired,
+PlacementProfileDropdown.propTypes = {
+  email: PropTypes.string,
 };
 
-export default ProfileDropdown;
+export default PlacementProfileDropdown;
