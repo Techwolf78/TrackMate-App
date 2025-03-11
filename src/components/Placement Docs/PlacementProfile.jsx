@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import { FaEllipsisV, FaSignOutAlt } from "react-icons/fa";
 import { getAuth, signOut } from "firebase/auth";
