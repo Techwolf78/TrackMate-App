@@ -97,7 +97,7 @@ function SalesForm() {
       try {
         // Remove unused response variable
         await fetch(
-          "https://script.google.com/macros/s/AKfycbzv6ktVVEupR85jMYfIqs2iFQs0bxxpB80NE2iELUQNnJRIs5noxJYoZwO-OdBjgp8/exec",
+          "https://script.google.com/macros/s/AKfycbymNThKKEdl3lzDZiy2KGM8JGMRX1AeBIsklC3JNqIDtVhcLJDgOdgv_5TsoZT0h9k/exec",
           {
             method: "POST",
             mode: "no-cors",
