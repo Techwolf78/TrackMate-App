@@ -20,14 +20,17 @@ function SalesForm() {
     salesRep: "",
     visitPurpose: "",
     courses: "",
+    otherCourse: "",
     visitPhase: "",
     autoDate: "",
     studentCount: "",
     perStudentRate: "",
     totalContractValue: "",
     remarks: "",
+    proposal: "", 
+    mou: "",      
   });
-
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -74,25 +77,22 @@ function SalesForm() {
         pointOfContactName: formData.pointOfContactName,
         pointOfContactDesignation: formData.pointOfContactDesignation,
         pointOfContactNumber: formData.pointOfContactNumber,
-        pointOfContactEmail: formData.pointOfContactEmail, // Add this line
-        accreditation:
-          formData.accreditation === "Other"
-            ? formData.otherAccreditation
-            : formData.accreditation,
-        affiliation:
-          formData.affiliation === "Other"
-            ? formData.otherAffiliation
-            : formData.affiliation,
+        pointOfContactEmail: formData.pointOfContactEmail,
+        accreditation: formData.accreditation === "Other" ? formData.otherAccreditation : formData.accreditation,
+        affiliation: formData.affiliation === "Other" ? formData.otherAffiliation : formData.affiliation,
         salesRep: formData.salesRep,
         visitPurpose: formData.visitPurpose,
-        courses: formData.courses,
+        courses: formData.courses === "Other" ? formData.otherCourse : formData.courses,
         visitPhase: formData.visitPhase,
         autoDate: formData.autoDate,
         studentCount: formData.studentCount,
         perStudentRate: formData.perStudentRate,
         totalContractValue: formData.totalContractValue,
         remarks: formData.remarks,
+        proposal: formData.proposal, 
+        mou: formData.mou,           
       };
+      
 
       try {
         // Remove unused response variable
@@ -124,7 +124,7 @@ function SalesForm() {
             pointOfContactName: "",
             pointOfContactDesignation: "",
             pointOfContactNumber: "",
-            pointOfContactEmail: "", // Add this line
+            pointOfContactEmail: "",
             accreditation: "",
             otherAccreditation: "",
             affiliation: "",
@@ -132,13 +132,18 @@ function SalesForm() {
             salesRep: "",
             visitPurpose: "",
             courses: "",
+            otherCourse: "",
             visitPhase: "",
             autoDate: "",
             studentCount: "",
             perStudentRate: "",
             totalContractValue: "",
             remarks: "",
+            proposal: "",  
+            mou: "",     
           });
+          
+
           sessionStorage.removeItem("salesVisitCode");
           setVisitCode(generateVisitCode());
         }, 2000);
@@ -307,13 +312,31 @@ function SalesForm() {
 
           <div>
             <label className="block text-sm font-medium">Courses</label>
-            <input
-              type="text"
+            <select
               name="courses"
               value={formData.courses}
               onChange={handleChange}
               className={inputClass}
-            />
+            >
+              <option value="">Select Course</option>
+              <option value="Eng.">Eng.</option>
+              <option value="MBA">MBA</option>
+              <option value="Other">Other</option>
+            </select>
+
+            {/* Show input if "Other" is selected */}
+            {formData.courses === "Other" && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  name="otherCourse"
+                  value={formData.otherCourse}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="Enter other course"
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -397,6 +420,36 @@ function SalesForm() {
               className={`${inputClass} resize-none`}
               rows="4"
             />
+          </div>
+
+          {/* Proposal Dropdown */}
+          <div>
+            <label className="block text-sm font-medium">Proposal</label>
+            <select
+              name="proposal"
+              value={formData.proposal || ""}
+              onChange={handleChange}
+              className={inputClass}
+            >
+              <option value="">Select Option</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+
+          {/* MOU Dropdown */}
+          <div>
+            <label className="block text-sm font-medium">MOU</label>
+            <select
+              name="mou"
+              value={formData.mou || ""}
+              onChange={handleChange}
+              className={inputClass}
+            >
+              <option value="">Select Option</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
           </div>
 
           {/* Submit Button */}
