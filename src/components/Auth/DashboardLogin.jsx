@@ -1,144 +1,247 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth, signInWithEmailAndPassword } from "../../firebaseConfig";
+import { MdEmail, MdLock } from "react-icons/md";
+
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_TIME = 2 * 60 * 1000; // 2 minutes
 
 const DashboardLogin = () => {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(localStorage.getItem("rememberedEmail") || "");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(!!localStorage.getItem("rememberedEmail"));
+  const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("");
+  const [selectedOption, setSelectedOption] = useState(localStorage.getItem("lastSelectedDashboard") || "");
+  const [shake, setShake] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.getElementById("email")?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   const validateForm = () => {
-    if (!email || !password || !selectedOption) {
-      setError("Please fill in both fields and select an option.");
-      return false;
+    let valid = true;
+    setEmailError("");
+    setPasswordError("");
+
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+
+    if (!email) {
+      setEmailError("Email is required.");
+      valid = false;
+    } else if (!emailRegex.test(email)) {
+      setEmailError("Invalid email format.");
+      valid = false;
     }
 
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zAZ0-9]{2,6}$/;
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email.");
-      return false;
+    if (!password) {
+      setPasswordError("Password is required.");
+      valid = false;
     }
 
-    setError("");
-    return true;
+    if (!selectedOption) {
+      setToast("Please select a dashboard.");
+      valid = false;
+    }
+
+    return valid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-  
+
+    const lockoutEnd = localStorage.getItem("lockoutEnd");
+    if (lockoutEnd && Date.now() < Number(lockoutEnd)) {
+      setToast("Too many failed attempts. Try again later.");
+      return;
+    }
+
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      setLoading(false);
-  
-      // Store the selected option in sessionStorage under a unique key for Dashboard
-      sessionStorage.setItem(`dashboard_selectedOption_${email}`, selectedOption);
-  
-      // Navigate based on the selected option
-      if (selectedOption === "saledash") {
-        navigate("/saledash");
-      } else if (selectedOption === "placdash") {
-        navigate("/placdash");
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error.code === "auth/wrong-password") {
-        setError("Incorrect password.");
-      } else if (error.code === "auth/user-not-found") {
-        setError("No user found with this email.");
+
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
       } else {
-        setError("An error occurred. Please try again.");
+        localStorage.removeItem("rememberedEmail");
       }
+
+      localStorage.setItem("lastSelectedDashboard", selectedOption);
+      sessionStorage.setItem(`dashboard_selectedOption_${email}`, selectedOption);
+      localStorage.removeItem("failedAttempts");
+      localStorage.removeItem("lockoutEnd");
+
+      setToast("Login successful!");
+      setTimeout(() => {
+        if (selectedOption === "saledash") {
+          navigate("/saledash");
+        } else if (selectedOption === "placdash") {
+          navigate("/placdash");
+        } else if (selectedOption === "salesvisitdash") {
+          navigate("/salesvisitdash");
+        }
+      }, 1000);
+    } catch (error) {
+      const attempts = Number(localStorage.getItem("failedAttempts") || 0) + 1;
+      localStorage.setItem("failedAttempts", attempts);
+
+      if (attempts >= MAX_ATTEMPTS) {
+        localStorage.setItem("lockoutEnd", Date.now() + LOCKOUT_TIME);
+        setToast("Too many failed attempts. Try again later.");
+      } else {
+        setToast("Login failed. Please check your credentials.");
+      }
+
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    } finally {
+      setLoading(false);
     }
   };
-  
-  
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gradient-to-r from-indigo-100 to-indigo-300 relative px-4 sm:px-6 lg:px-8">
-      {/* Background shapes */}
-      <div className="absolute top-10 left-10 w-32 h-32 bg-teal-200 rounded-full opacity-40 sm:w-40 sm:h-40 lg:w-48 lg:h-48"></div>
-      <div className="absolute bottom-2 right-10 w-48 h-48 bg-pink-200 rounded-full opacity-30 sm:w-56 sm:h-56 lg:w-64 lg:h-64"></div>
-      <div className="absolute top-2 right-24 w-60 h-48 bg-yellow-100 opacity-20 rounded-lg sm:w-72 sm:h-56 lg:w-80 lg:h-64"></div>
-      <div className="absolute bottom-10 left-10 w-56 h-56 bg-purple-100 rounded-full opacity-30 sm:w-64 sm:h-64 lg:w-72 lg:h-72"></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-gray-100 via-white to-gray-200 px-4">
+      {toast && (
+        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg animate-fade-in-out">
+          {toast}
+        </div>
+      )}
 
-      {/* Admin Login Modal */}
-      <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full sm:w-96 lg:w-1/3 z-10 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-indigo-200 via-transparent to-transparent opacity-50 z-[-1]"></div>
+      <div
+        className={`w-full max-w-md bg-white/70 backdrop-blur-md border border-gray-200 shadow-xl rounded-2xl p-8 transition-all duration-500 ${
+          shake ? "animate-shake" : "animate-fade-in"
+        }`}
+      >
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Admin Login</h2>
 
-        <h2 className="text-3xl font-semibold text-center text-gray-700 mb-6 relative z-10">
-          Admin Login
-        </h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-500">
-              Email Address
-            </label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Email */}
+          <div className="relative">
+            <MdEmail className="absolute left-3 top-3.5 text-gray-400" size={20} />
             <input
               type="email"
               id="email"
-              placeholder="Enter your admin email"
+              inputMode="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-shadow duration-300 shadow-sm hover:shadow-md"
+              placeholder="Email Address"
               required
+              className={`peer w-full pl-10 pt-6 pb-2 border rounded-md bg-transparent text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                emailError ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            <label htmlFor="email" className="absolute left-10 top-1 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1 peer-focus:text-xs peer-focus:text-gray-600">
+              Email Address
+            </label>
+            {emailError && <p className="text-red-600 text-sm mt-1">{emailError}</p>}
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-500">
+          {/* Password */}
+          <div className="relative">
+            <MdLock className="absolute left-3 top-3.5 text-gray-400" size={20} />
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              value={password}
+              inputMode="text"
+              autoComplete="current-password"
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              className={`peer w-full pl-10 pt-6 pb-2 border rounded-md bg-transparent text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                passwordError ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            <label htmlFor="password" className="absolute left-10 top-1 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1 peer-focus:text-xs peer-focus:text-gray-600">
               Password
             </label>
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-shadow duration-300 shadow-sm hover:shadow-md"
-              required
-            />
-          </div>
-
-          <div className="mb-6">
-            <label htmlFor="option" className="block text-sm font-medium text-gray-500">
-              Select Option
-            </label>
-            <select
-              id="option"
-              value={selectedOption}
-              onChange={(e) => setSelectedOption(e.target.value)}
-              className="mt-2 w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-shadow duration-300 shadow-sm hover:shadow-md"
+            <button
+              type="button"
+              className="absolute right-3 top-3 text-xs text-gray-500 hover:text-indigo-600"
+              onClick={() => setShowPassword(!showPassword)}
             >
-              <option value="">Select an option</option>
-              <option value="saledash">Sales</option>
-              <option value="placdash">Placement</option>
-            </select>
+              {showPassword ? "Hide" : "Show"}
+            </button>
+            {passwordError && <p className="text-red-600 text-sm mt-1">{passwordError}</p>}
           </div>
 
-          {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
+          {/* Dashboard Options */}
+          <select
+            id="option"
+            value={selectedOption}
+            onChange={(e) => {
+              setSelectedOption(e.target.value);
+              localStorage.setItem("lastSelectedDashboard", e.target.value);
+            }}
+            className="w-full px-4 py-3 border border-gray-300 rounded-md bg-white text-gray-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
+          >
+            <option value="">Select Dashboard</option>
+            <option value="saledash">Sales Spent Dashboard</option>
+            <option value="placdash">Placement Spent Dashboard</option>
+            <option value="salesvisitdash">Sales Visit Dashboard</option>
+          </select>
 
+          {/* Remember Me and Forgot Password */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center space-x-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={() => setRememberMe(!rememberMe)}
+                className="accent-indigo-600"
+              />
+              <span>Remember me</span>
+            </label>
+            <Link to="/forgetpassdash" className="text-sm text-indigo-600 hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
-            className={`w-full py-3 px-6 bg-indigo-500 text-white rounded-lg font-medium transition duration-200 ${
-              loading ? "bg-indigo-300" : "hover:bg-indigo-600"
-            }`}
             disabled={loading}
+            className={`w-full py-3 rounded-md font-medium text-white flex justify-center items-center transition ${
+              loading ? "bg-indigo-300 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
           >
+            {loading && (
+              <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            )}
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-
-        <div className="mt-6 text-center">
-          <Link to="/forgetpassword" className="text-sm text-indigo-500 hover:underline">
-            Forgot Password?
-          </Link>
-        </div>
       </div>
+
+      {/* Shake Animation */}
+      <style>
+        {`
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+          }
+          .animate-shake {
+            animation: shake 0.4s ease;
+          }
+        `}
+      </style>
     </div>
   );
 };

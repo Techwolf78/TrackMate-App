@@ -1,10 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import SalesUserDropdown from "./SalesUserDropdown";
 import SalesBackButton from "./SalesBackButton";
-import AffiliationSelect from "./AffiliationSelect"; // Import the new component
-import StateSelect from "./StateSelect"; // Import the StateSelect component
+import AffiliationSelect from "./AffiliationSelect";
+import StateSelect from "./StateSelect";
+
+import { ref, set } from "firebase/database";
+import { get } from "firebase/database"; // Already have ref and set
+import { db } from "../../../firebaseConfig"; // ✅ Correct
 
 function SalesForm() {
+  const [visitCode, setVisitCode] = useState("");
+
   const [formData, setFormData] = useState({
     collegeName: "",
     city: "",
@@ -27,28 +33,14 @@ function SalesForm() {
     perStudentRate: "",
     totalContractValue: "",
     remarks: "",
-    proposal: "", 
-    mou: "",      
+    proposal: "",
+    mou: "",
   });
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-
-  const generateVisitCode = () => {
-    return `SALES-VIST-${Math.floor(Math.random() * 10000)}`;
-  };
-
-  const [visitCode, setVisitCode] = useState(
-    sessionStorage.getItem("salesVisitCode") || generateVisitCode()
-  );
-
-  useEffect(() => {
-    if (!sessionStorage.getItem("salesVisitCode")) {
-      sessionStorage.setItem("salesVisitCode", visitCode);
-    }
-  }, [visitCode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,38 +55,103 @@ function SalesForm() {
     setIsConfirmModalOpen(true);
   };
 
+  const getNextVisitCode = async () => {
+    const salesVisitRef = ref(db, "sales_visitcode");
+    const snapshot = await get(salesVisitRef);
+
+    let nextCode = "SALES_VISIT_01";
+
+    if (snapshot.exists()) {
+      const lastCode = snapshot.val().visitCode;
+      const num = parseInt(lastCode.split("_")[2], 10);
+      const nextCodeNum = num + 1;
+      nextCode = `SALES_VISIT_${String(nextCodeNum).padStart(2, "0")}`;
+    }
+
+    await set(salesVisitRef, { visitCode: nextCode });
+    return nextCode;
+  };
+
   const handleConfirmSubmit = async () => {
     setIsConfirmModalOpen(false);
     setIsModalOpen(true);
     setIsLoading(true);
 
     setTimeout(async () => {
-      const data = {
-        visitCode: visitCode,
-        collegeName: formData.collegeName,
-        city: formData.city,
-        state: formData.state,
-        pointOfContactName: formData.pointOfContactName,
-        pointOfContactDesignation: formData.pointOfContactDesignation,
-        pointOfContactNumber: formData.pointOfContactNumber,
-        pointOfContactEmail: formData.pointOfContactEmail,
-        accreditation: formData.accreditation === "Other" ? formData.otherAccreditation : formData.accreditation,
-        affiliation: formData.affiliation === "Other" ? formData.otherAffiliation : formData.affiliation,
-        salesRep: formData.salesRep,
-        visitPurpose: formData.visitPurpose,
-        courses: formData.courses === "Other" ? formData.otherCourse : formData.courses,
-        visitPhase: formData.visitPhase,
-        autoDate: formData.autoDate,
-        studentCount: formData.studentCount,
-        perStudentRate: formData.perStudentRate,
-        totalContractValue: formData.totalContractValue,
-        remarks: formData.remarks,
-        proposal: formData.proposal, 
-        mou: formData.mou,           
-      };
-      
       try {
-        // Remove unused response variable
+        const code = await getNextVisitCode(); // 🔁 generate new code
+        setVisitCode(code);
+
+        const data = {
+          visitCode: code,
+          collegeName: formData.collegeName,
+          city: formData.city,
+          state: formData.state,
+          pointOfContactName: formData.pointOfContactName,
+          pointOfContactDesignation: formData.pointOfContactDesignation,
+          pointOfContactNumber: formData.pointOfContactNumber,
+          pointOfContactEmail: formData.pointOfContactEmail,
+          accreditation:
+            formData.accreditation === "Other"
+              ? formData.otherAccreditation
+              : formData.accreditation,
+          affiliation:
+            formData.affiliation === "Other"
+              ? formData.otherAffiliation
+              : formData.affiliation,
+          salesRep: formData.salesRep,
+          visitPurpose: formData.visitPurpose,
+          courses:
+            formData.courses === "Other"
+              ? formData.otherCourse
+              : formData.courses,
+          visitPhase: formData.visitPhase,
+          autoDate: formData.autoDate,
+          studentCount: formData.studentCount,
+          perStudentRate: formData.perStudentRate,
+          totalContractValue: formData.totalContractValue,
+          remarks: formData.remarks,
+          proposal: formData.proposal,
+          mou: formData.mou,
+        };
+
+        // Save to Firebase under salesVisits/{visitCode}
+        const firebaseDataRef = ref(db, `salesVisits/${code}`);
+        await set(firebaseDataRef, {
+          "Visit Code": code,
+          "College Name": formData.collegeName,
+          City: formData.city,
+          State: formData.state,
+          "Point of Contact Name": formData.pointOfContactName,
+          "Point of Contact Designation": formData.pointOfContactDesignation,
+          "Point of Contact Number": formData.pointOfContactNumber,
+          "Point of Contact Email": formData.pointOfContactEmail,
+          Accreditation:
+            formData.accreditation === "Other"
+              ? formData.otherAccreditation
+              : formData.accreditation,
+          Affiliation:
+            formData.affiliation === "Other"
+              ? formData.otherAffiliation
+              : formData.affiliation,
+          "Sales Rep": formData.salesRep,
+          "Visit Purpose": formData.visitPurpose,
+          Courses:
+            formData.courses === "Other"
+              ? formData.otherCourse
+              : formData.courses,
+          "Visit Phase": formData.visitPhase,
+          "Auto Date": formData.autoDate,
+          "Student Count": Number(formData.studentCount),
+          "Per Student Rate": formData.perStudentRate
+            ? Number(formData.perStudentRate)
+            : null,
+          "Total Contract Value": Number(formData.totalContractValue),
+          "Remarks for Next Visit": formData.remarks,
+          Proposal: formData.proposal,
+          MOU: formData.mou,
+        });
+
         await fetch(
           "https://script.google.com/macros/s/AKfycbymNThKKEdl3lzDZiy2KGM8JGMRX1AeBIsklC3JNqIDtVhcLJDgOdgv_5TsoZT0h9k/exec",
           {
@@ -107,6 +164,8 @@ function SalesForm() {
             credentials: "include",
           }
         );
+
+        sessionStorage.setItem("salesVisitCode", code);
         setSuccessMessage("Data submitted successfully!");
       } catch (error) {
         console.error("Error during submission:", error);
@@ -138,13 +197,11 @@ function SalesForm() {
             perStudentRate: "",
             totalContractValue: "",
             remarks: "",
-            proposal: "",  
-            mou: "",     
+            proposal: "",
+            mou: "",
           });
-          
-
           sessionStorage.removeItem("salesVisitCode");
-          setVisitCode(generateVisitCode());
+          setVisitCode("");
         }, 2000);
       }
     }, 500);
@@ -177,7 +234,6 @@ function SalesForm() {
             />
           </div>
 
-          {/* State Select Component */}
           <StateSelect state={formData.state} handleChange={handleChange} />
 
           <div>
@@ -217,7 +273,6 @@ function SalesForm() {
             />
           </div>
 
-          {/* Change Client Designation */}
           <div>
             <label className="block text-sm font-medium">
               Point of Contact Designation
@@ -231,7 +286,6 @@ function SalesForm() {
             />
           </div>
 
-          {/* Change Client Contact */}
           <div>
             <label className="block text-sm font-medium">
               Point of Contact Number
@@ -260,8 +314,6 @@ function SalesForm() {
               <option value="NABH">NABH</option>
               <option value="Other">Other</option>
             </select>
-
-            {/* Show this input only if "Other" is selected */}
             {formData.accreditation === "Other" && (
               <div className="mt-2">
                 <input
@@ -276,8 +328,6 @@ function SalesForm() {
             )}
           </div>
 
-          {/* Affiliation Field */}
-          {/* Affiliation Select Component */}
           <AffiliationSelect
             affiliation={formData.affiliation}
             otherAffiliation={formData.otherAffiliation}
@@ -322,8 +372,6 @@ function SalesForm() {
               <option value="MBA">MBA</option>
               <option value="Other">Other</option>
             </select>
-
-            {/* Show input if "Other" is selected */}
             {formData.courses === "Other" && (
               <div className="mt-2">
                 <input
@@ -421,7 +469,6 @@ function SalesForm() {
             />
           </div>
 
-          {/* Proposal Dropdown */}
           <div>
             <label className="block text-sm font-medium">Proposal</label>
             <select
@@ -436,7 +483,6 @@ function SalesForm() {
             </select>
           </div>
 
-          {/* MOU Dropdown */}
           <div>
             <label className="block text-sm font-medium">MOU</label>
             <select
@@ -451,7 +497,6 @@ function SalesForm() {
             </select>
           </div>
 
-          {/* Submit Button */}
           <div className="text-center mt-8">
             <button type="submit" className={buttonClass}>
               Submit
@@ -460,11 +505,10 @@ function SalesForm() {
         </div>
       </form>
 
-      {/* Overlay Modal */}
+      {/* Loading / Success Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center relative">
-            {/* Close Button */}
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-900"
@@ -476,7 +520,6 @@ function SalesForm() {
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                className="stroke-current"
               >
                 <path
                   strokeLinecap="round"
@@ -486,22 +529,14 @@ function SalesForm() {
                 />
               </svg>
             </button>
-
-            {/* Modal Content */}
-            <div>
-              {isLoading ? (
-                <>
-                  <div className="text-xl font-semibold mb-4">Saving...</div>
-                  <div className="animate-spin rounded-full border-t-4 border-teal-500 w-12 h-12 mx-auto mb-4"></div>
-                </>
-              ) : (
-                <>
-                  <div className="text-xl font-semibold mb-4">
-                    {successMessage}
-                  </div>
-                </>
-              )}
-            </div>
+            {isLoading ? (
+              <>
+                <div className="text-xl font-semibold mb-4">Saving...</div>
+                <div className="animate-spin rounded-full border-t-4 border-teal-500 w-12 h-12 mx-auto mb-4"></div>
+              </>
+            ) : (
+              <div className="text-xl font-semibold mb-4">{successMessage}</div>
+            )}
           </div>
         </div>
       )}
@@ -510,7 +545,6 @@ function SalesForm() {
       {isConfirmModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 px-8">
           <div className="bg-white p-6 rounded-lg shadow-lg w-auto text-center relative">
-            {/* Close Button */}
             <button
               onClick={() => setIsConfirmModalOpen(false)}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-900"
@@ -522,7 +556,6 @@ function SalesForm() {
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                className="stroke-current"
               >
                 <path
                   strokeLinecap="round"
@@ -532,26 +565,22 @@ function SalesForm() {
                 />
               </svg>
             </button>
-
-            {/* Confirmation Modal Content */}
-            <div>
-              <div className="text-xl font-semibold mb-4">
-                Are you sure you want to submit the form?
-              </div>
-              <div className="space-x-4">
-                <button
-                  onClick={handleConfirmSubmit}
-                  className="bg-indigo-500 text-white px-6 py-2 rounded-lg"
-                >
-                  Confirm
-                </button>
-                <button
-                  onClick={() => setIsConfirmModalOpen(false)}
-                  className="bg-gray-300 text-gray-800 px-6 py-2 rounded-lg"
-                >
-                  Cancel
-                </button>
-              </div>
+            <div className="text-xl font-semibold mb-4">
+              Are you sure you want to submit the form?
+            </div>
+            <div className="space-x-4">
+              <button
+                onClick={handleConfirmSubmit}
+                className="bg-indigo-500 text-white px-6 py-2 rounded-lg"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="bg-gray-300 text-gray-800 px-6 py-2 rounded-lg"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

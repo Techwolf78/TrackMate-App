@@ -1,32 +1,28 @@
-import React, { useEffect, useState } from "react";
-import { ref, get, set } from "firebase/database"; // Firebase imports
+import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import { ref, get, set } from "firebase/database"; // Firebase database imports
 import { db } from "../../../firebaseConfig"; // Firebase configuration
-import PropTypes from 'prop-types';
 
-// Function to get the last visit code from Firebase
-const getLastVisitCode = async () => {
-  const salesRef = ref(db, "placement_visitcode"); // Reference to the Firebase data
-
-  const snapshot = await get(salesRef);
-  if (snapshot.exists()) {
-    const data = snapshot.val();
-    const keys = Object.keys(data);
-    const lastTransactionKey = keys[keys.length - 1]; // Get the last transaction key
-    const lastCode = data[lastTransactionKey].visitCode; // Assuming visitCode is saved under each transaction
-    return lastCode;
-  }
-  return null;
-};
-
-// Function to increment the visit code based on the last visit code
-const incrementVisitCode = (lastCode) => {
-  const num = parseInt(lastCode.split('_')[2], 10); // Extract the number after 'placement_visit_'
-  const nextCodeNum = num + 1; // Increment the number
-  return `placement_visit_${nextCodeNum.toString().padStart(2, '0')}`; // Return the incremented code, padded with zero if needed
-};
-
-const PlacementVisitCode = ({ onCodeChange }) => {
+function SalesVisitCode({ onCodeGenerated }) {
   const [visitCode, setVisitCode] = useState("");
+
+  // Function to get the last visit code from Firebase
+  const getLastVisitCode = async () => {
+    const salesVisitRef = ref(db, "sales_visitcode");
+
+    const snapshot = await get(salesVisitRef);
+    if (snapshot.exists()) {
+      const lastCode = snapshot.val().visitCode; // Get the last visit code from Firebase
+      return lastCode;
+    }
+    return null;
+  };
+
+  const incrementVisitCode = (lastCode) => {
+    const num = parseInt(lastCode.split('_')[2], 10); // Change split delimiter to '_'
+    const nextCodeNum = num + 1;
+    return `sales_visit_${String(nextCodeNum).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     const fetchVisitCode = async () => {
@@ -34,55 +30,43 @@ const PlacementVisitCode = ({ onCodeChange }) => {
         const lastCode = await getLastVisitCode();
         if (lastCode) {
           const nextCode = incrementVisitCode(lastCode); // Generate the next code
-          setVisitCode(nextCode);
-          onCodeChange(nextCode); // Pass the generated code to the parent component
+          setVisitCode(nextCode); // Set the visit code in the state
+          // Save the next visit code to Firebase
+          const salesVisitRef = ref(db, "sales_visitcode");
+          await set(salesVisitRef, { visitCode: nextCode }); // Update the visit code in Firebase
         } else {
-          const defaultCode = "placement_visit_01"; // Default code if no data exists
+          const defaultCode = "sales_visit_01";
           setVisitCode(defaultCode);
-          onCodeChange(defaultCode); // Pass default code to the parent component
+          // Save the default visit code to Firebase
+          const salesVisitRef = ref(db, "sales_visitcode");
+          await set(salesVisitRef, { visitCode: defaultCode }); // Save the default code in Firebase
         }
       } catch (error) {
         console.error("Error fetching last visit code:", error);
-        const defaultCode = "placement_visit_01"; // Fallback to default code in case of error
+        const defaultCode = "sales_visit_01";
         setVisitCode(defaultCode);
-        onCodeChange(defaultCode); // Pass default code to the parent component
+        // Save the default visit code to Firebase
+        const salesVisitRef = ref(db, "sales_visitcode");
+        await set(salesVisitRef, { visitCode: defaultCode }); // Save the default code in Firebase
       }
     };
 
     fetchVisitCode();
-  }, [onCodeChange]);
+  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      // Saving the visitCode to Firebase
-      await set(ref(db, "placement_visitcode"), { visitCode });
-      console.log("Visit code saved:", visitCode);
-
-      // Here you can trigger the modal success message logic if needed
-    } catch (error) {
-      console.error("Error saving visit code:", error);
+  useEffect(() => {
+    // Save the visit code to sessionStorage and call onCodeGenerated when it's set
+    if (visitCode) {
+      sessionStorage.setItem("salesVisitCode", visitCode);
+      onCodeGenerated(visitCode);
     }
-  };
+  }, [visitCode, onCodeGenerated]);
 
-  return (
-    <div>
-      <div className="text-sm font-semibold">
-        <p>Visit Code: {visitCode}</p>
-      </div>
-      <form onSubmit={handleSubmit}>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-          Submit Visit Code
-        </button>
-      </form>
-    </div>
-  );
+  return null;
+}
+
+SalesVisitCode.propTypes = {
+  onCodeGenerated: PropTypes.func.isRequired,
 };
 
-// PropTypes validation
-PlacementVisitCode.propTypes = {
-  onCodeChange: PropTypes.func.isRequired, // Prop type validation for onCodeChange
-};
-
-export default PlacementVisitCode;
+export default SalesVisitCode;
