@@ -12,6 +12,7 @@ function SalesForm() {
   const [visitCode, setVisitCode] = useState("");
 
   const [formData, setFormData] = useState({
+    timestamp: "",  // new field to store user-selected date
     collegeName: "",
     city: "",
     state: "",
@@ -72,20 +73,18 @@ function SalesForm() {
     return nextCode;
   };
 
-const getCurrentIndiaTime = () => {
-  return new Date().toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-};
-
-
+  const getCurrentIndiaTime = () => {
+    return new Date().toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
 
   const handleConfirmSubmit = async () => {
     setIsConfirmModalOpen(false);
@@ -138,6 +137,7 @@ const getCurrentIndiaTime = () => {
 
         // ✅ Google Sheet data (NO dateandtime)
         const googleSheetData = {
+          timestamp: formData.timestamp, // user selected date
           visitCode: code,
           collegeName: formData.collegeName,
           city: formData.city,
@@ -176,7 +176,7 @@ const getCurrentIndiaTime = () => {
 
         // 📤 Send to Google Sheet
         await fetch(
-          "https://script.google.com/macros/s/AKfycbymNThKKEdl3lzDZiy2KGM8JGMRX1AeBIsklC3JNqIDtVhcLJDgOdgv_5TsoZT0h9k/exec",
+          "https://script.google.com/macros/s/AKfycbwRKhY79qAxRhP5yo7vw612cFgx8_qO8smMzcHZqwlC2ABm01UM8MiPcyIB-uGYUp8/exec",
           {
             method: "POST",
             mode: "no-cors",
@@ -246,6 +246,19 @@ const getCurrentIndiaTime = () => {
         </div>
 
         <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium">
+              Please select the date of the visit
+            </label>
+            <input
+              type="date"
+              name="timestamp"
+              value={formData.timestamp || ""}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium">College Name</label>
             <input
