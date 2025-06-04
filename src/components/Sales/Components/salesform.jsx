@@ -72,6 +72,21 @@ function SalesForm() {
     return nextCode;
   };
 
+const getCurrentIndiaTime = () => {
+  return new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+};
+
+
+
   const handleConfirmSubmit = async () => {
     setIsConfirmModalOpen(false);
     setIsModalOpen(true);
@@ -79,45 +94,13 @@ function SalesForm() {
 
     setTimeout(async () => {
       try {
-        const code = await getNextVisitCode(); // 🔁 generate new code
+        const code = await getNextVisitCode();
         setVisitCode(code);
 
-        const data = {
-          visitCode: code,
-          collegeName: formData.collegeName,
-          city: formData.city,
-          state: formData.state,
-          pointOfContactName: formData.pointOfContactName,
-          pointOfContactDesignation: formData.pointOfContactDesignation,
-          pointOfContactNumber: formData.pointOfContactNumber,
-          pointOfContactEmail: formData.pointOfContactEmail,
-          accreditation:
-            formData.accreditation === "Other"
-              ? formData.otherAccreditation
-              : formData.accreditation,
-          affiliation:
-            formData.affiliation === "Other"
-              ? formData.otherAffiliation
-              : formData.affiliation,
-          salesRep: formData.salesRep,
-          visitPurpose: formData.visitPurpose,
-          courses:
-            formData.courses === "Other"
-              ? formData.otherCourse
-              : formData.courses,
-          visitPhase: formData.visitPhase,
-          autoDate: formData.autoDate,
-          studentCount: formData.studentCount,
-          perStudentRate: formData.perStudentRate,
-          totalContractValue: formData.totalContractValue,
-          remarks: formData.remarks,
-          proposal: formData.proposal,
-          mou: formData.mou,
-        };
+        const indiaTimeNow = getCurrentIndiaTime(); // ✅ Get India time
 
-        // Save to Firebase under salesVisits/{visitCode}
-        const firebaseDataRef = ref(db, `salesVisits/${code}`);
-        await set(firebaseDataRef, {
+        // ✅ Firebase data (includes dateandtime)
+        const firebaseData = {
           "Visit Code": code,
           "College Name": formData.collegeName,
           City: formData.city,
@@ -150,8 +133,48 @@ function SalesForm() {
           "Remarks for Next Visit": formData.remarks,
           Proposal: formData.proposal,
           MOU: formData.mou,
-        });
+          dateandtime: indiaTimeNow, // ✅ new key added only to Firebase
+        };
 
+        // ✅ Google Sheet data (NO dateandtime)
+        const googleSheetData = {
+          visitCode: code,
+          collegeName: formData.collegeName,
+          city: formData.city,
+          state: formData.state,
+          pointOfContactName: formData.pointOfContactName,
+          pointOfContactDesignation: formData.pointOfContactDesignation,
+          pointOfContactNumber: formData.pointOfContactNumber,
+          pointOfContactEmail: formData.pointOfContactEmail,
+          accreditation:
+            formData.accreditation === "Other"
+              ? formData.otherAccreditation
+              : formData.accreditation,
+          affiliation:
+            formData.affiliation === "Other"
+              ? formData.otherAffiliation
+              : formData.affiliation,
+          salesRep: formData.salesRep,
+          visitPurpose: formData.visitPurpose,
+          courses:
+            formData.courses === "Other"
+              ? formData.otherCourse
+              : formData.courses,
+          visitPhase: formData.visitPhase,
+          autoDate: formData.autoDate,
+          studentCount: formData.studentCount,
+          perStudentRate: formData.perStudentRate,
+          totalContractValue: formData.totalContractValue,
+          remarks: formData.remarks,
+          proposal: formData.proposal,
+          mou: formData.mou,
+        };
+
+        // 🔥 Save to Firebase
+        const firebaseDataRef = ref(db, `salesVisits/${code}`);
+        await set(firebaseDataRef, firebaseData);
+
+        // 📤 Send to Google Sheet
         await fetch(
           "https://script.google.com/macros/s/AKfycbymNThKKEdl3lzDZiy2KGM8JGMRX1AeBIsklC3JNqIDtVhcLJDgOdgv_5TsoZT0h9k/exec",
           {
@@ -160,7 +183,7 @@ function SalesForm() {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(googleSheetData),
             credentials: "include",
           }
         );
