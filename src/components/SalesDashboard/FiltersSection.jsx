@@ -3,6 +3,47 @@ import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
 import Select from 'react-select';
 
+// 🔧 Custom styles for react-select
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    borderRadius: '0.5rem',
+    borderColor: state.isFocused ? '#2563eb' : '#d1d5db',
+    boxShadow: state.isFocused ? '0 0 0 2px rgba(37, 99, 235, 0.3)' : 'none',
+    padding: '2px 4px',
+    minHeight: '40px',
+    fontSize: '0.875rem',
+  }),
+  multiValue: (base) => ({
+    ...base,
+    backgroundColor: '#eff6ff',
+    borderRadius: '0.25rem',
+    padding: '2px 4px',
+  }),
+  multiValueLabel: (base) => ({
+    ...base,
+    color: '#1d4ed8',
+    fontWeight: 500,
+  }),
+  multiValueRemove: (base) => ({
+    ...base,
+    color: '#1d4ed8',
+    ':hover': {
+      backgroundColor: '#bfdbfe',
+      color: '#1e3a8a',
+    },
+  }),
+  placeholder: (base) => ({
+    ...base,
+    fontSize: '0.875rem',
+    color: '#6b7280',
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+};
+
 const FiltersSection = ({
   loadCities,
   filterCity,
@@ -15,25 +56,25 @@ const FiltersSection = ({
   filterMonth,
   setFilterMonth,
   cityOptions,
-  filteredVisits
+  filteredVisits,
 }) => {
   const handleExport = () => {
     const csv = Papa.unparse(filteredVisits);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "sales_visits.csv");
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, 'sales_visits.csv');
   };
 
   const handleResetFilters = () => {
     setFilterCity([]);
-    setDateFrom("");
-    setDateTo("");
+    setDateFrom('');
+    setDateTo('');
     setFilterMonth([]);
     setCurrentPage(1);
   };
 
   const monthOptions = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
   ].map((month, index) => ({
     label: month,
     value: index + 1,
@@ -66,6 +107,7 @@ const FiltersSection = ({
           }}
           onMenuOpen={loadCities}
           placeholder="Select Cities..."
+          styles={customSelectStyles}
         />
       </div>
 
@@ -82,7 +124,7 @@ const FiltersSection = ({
             className="border rounded px-3 py-2 pr-8 w-full sm:w-auto"
           />
           {dateFrom && (
-            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 rounded-full animate-green-blink"></span>
+            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 rounded-full animate-green-blink bg-green-500"></span>
           )}
         </div>
         <div className="relative w-full sm:w-auto">
@@ -96,7 +138,7 @@ const FiltersSection = ({
             className="border rounded px-3 py-2 pr-8 w-full sm:w-auto"
           />
           {dateTo && (
-            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 rounded-full animate-green-blink"></span>
+            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 rounded-full animate-green-blink bg-green-500"></span>
           )}
         </div>
       </div>
@@ -112,6 +154,7 @@ const FiltersSection = ({
             setCurrentPage(1);
           }}
           placeholder="Select Months..."
+          styles={customSelectStyles}
         />
       </div>
 
@@ -140,7 +183,7 @@ const FiltersSection = ({
 
         <button
           onClick={handleExport}
-          className="px-4 py-2 bg-blue-600 text-white rounded shadow whitespace-nowrap"
+          className="px-4 py-2 bg-blue-600 text-white rounded shadow whitespace-nowrap hover:bg-blue-700 transition"
         >
           Export CSV
         </button>
