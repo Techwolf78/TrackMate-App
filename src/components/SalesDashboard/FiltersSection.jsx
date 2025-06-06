@@ -1,11 +1,12 @@
 import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
+import Select from 'react-select';
 
-const FiltersSection = ({ 
-  loadCities, 
-  filterCity, 
-  setFilterCity, 
+const FiltersSection = ({
+  loadCities,
+  filterCity,
+  setFilterCity,
   setCurrentPage,
   dateFrom,
   setDateFrom,
@@ -23,55 +24,49 @@ const FiltersSection = ({
   };
 
   const handleResetFilters = () => {
-  setFilterCity("");
-  setDateFrom("");
-  setDateTo("");
-  setFilterMonth("");
-  setCurrentPage(1);
-};
+    setFilterCity([]);
+    setDateFrom("");
+    setDateTo("");
+    setFilterMonth([]);
+    setCurrentPage(1);
+  };
+
+  const monthOptions = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ].map((month, index) => ({
+    label: month,
+    value: index + 1,
+  }));
+
+  const selectedMonths = monthOptions.filter((m) =>
+    filterMonth.includes(m.value)
+  );
+
+  const citySelectOptions = cityOptions.map((city) => ({
+    label: city,
+    value: city,
+  }));
+
+  const selectedCities = citySelectOptions.filter((c) =>
+    filterCity.includes(c.value)
+  );
 
   return (
-    <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-      {/* City Filter */}
-      <div className="relative w-full sm:w-64">
-        <select
-          onClick={loadCities}
-          value={filterCity}
-          onChange={(e) => {
-            setFilterCity(e.target.value);
+    <div className="mb-6 flex flex-col sm:flex-row flex-wrap gap-4 items-center justify-between w-full">
+      {/* City Multi-Select */}
+      <div className="w-full sm:w-64">
+        <Select
+          isMulti
+          options={citySelectOptions}
+          value={selectedCities}
+          onChange={(selected) => {
+            setFilterCity(selected.map((opt) => opt.value));
             setCurrentPage(1);
           }}
-          className="appearance-none px-4 py-2 border rounded w-full pr-10"
-        >
-          <option value="">All City</option>
-          {cityOptions.map((city) => (
-            <option key={city} value={city}>{city}</option>
-          ))}
-        </select>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-          <div
-            className={`h-6 w-6 flex items-center justify-center rounded-full transition-colors duration-200 ${
-              filterCity
-                ? "bg-green-100 text-green-600"
-                : "bg-gray-100 text-gray-500"
-            }`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z"
-              />
-            </svg>
-          </div>
-        </div>
+          onMenuOpen={loadCities}
+          placeholder="Select Cities..."
+        />
       </div>
 
       {/* Date Range Filters */}
@@ -106,84 +101,64 @@ const FiltersSection = ({
         </div>
       </div>
 
-      {/* Month Filter */}
-      <div className="relative w-full sm:w-48">
-        <select
-          value={filterMonth}
-          onChange={(e) => {
-            setFilterMonth(e.target.value);
+      {/* Month Multi-Select */}
+      <div className="w-full sm:w-64">
+        <Select
+          isMulti
+          options={monthOptions}
+          value={selectedMonths}
+          onChange={(selected) => {
+            setFilterMonth(selected.map((opt) => opt.value));
             setCurrentPage(1);
           }}
-          className="appearance-none px-4 py-2 border rounded w-full pr-10"
-        >
-          <option value="">All Months</option>
-          {[
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
-          ].map((month, index) => (
-            <option key={month} value={index + 1}>
-              {month}
-            </option>
-          ))}
-        </select>
+          placeholder="Select Months..."
+        />
       </div>
 
-<div className="flex gap-2">
-<button
-  onClick={handleResetFilters}
-  className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 px-3 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-4 w-4"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M4 4v5h.582m15.327-2A9.004 9.004 0 003 12.055M4.818 16.318A9.004 9.004 0 0021 12.055M20 20v-5h-.581"
-    />
-  </svg>
-  Reset
-</button>
+      {/* Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleResetFilters}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 px-3 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 4v5h.582m15.327-2A9.004 9.004 0 003 12.055M4.818 16.318A9.004 9.004 0 0021 12.055M20 20v-5h-.581"
+            />
+          </svg>
+          Reset
+        </button>
 
-
-
-  <button
-    onClick={handleExport}
-    className="px-4 py-2 bg-blue-600 text-white rounded shadow whitespace-nowrap"
-  >
-    Export CSV
-  </button>
-</div>
-
+        <button
+          onClick={handleExport}
+          className="px-4 py-2 bg-blue-600 text-white rounded shadow whitespace-nowrap"
+        >
+          Export CSV
+        </button>
+      </div>
     </div>
   );
 };
 
 FiltersSection.propTypes = {
   loadCities: PropTypes.func.isRequired,
-  filterCity: PropTypes.string.isRequired,
+  filterCity: PropTypes.array.isRequired,
   setFilterCity: PropTypes.func.isRequired,
   setCurrentPage: PropTypes.func.isRequired,
   dateFrom: PropTypes.string.isRequired,
   setDateFrom: PropTypes.func.isRequired,
   dateTo: PropTypes.string.isRequired,
   setDateTo: PropTypes.func.isRequired,
-  filterMonth: PropTypes.string.isRequired,
+  filterMonth: PropTypes.array.isRequired,
   setFilterMonth: PropTypes.func.isRequired,
   cityOptions: PropTypes.array.isRequired,
   filteredVisits: PropTypes.array.isRequired,

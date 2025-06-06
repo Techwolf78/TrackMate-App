@@ -1,3 +1,4 @@
+// Convert Roman numerals to numbers
 export const romanToNumber = (roman) => {
   const romanMap = {
     I: 1,
@@ -12,6 +13,7 @@ export const romanToNumber = (roman) => {
   return romanMap[roman] || 0;
 };
 
+// Core data processing and filtering
 export const processVisitsData = ({
   visits,
   filterCity,
@@ -21,10 +23,18 @@ export const processVisitsData = ({
   currentPage,
   rowsPerPage,
 }) => {
-  const filteredVisits = visits
-    .filter((v) =>
-      filterCity ? v["City"]?.toLowerCase() === filterCity.toLowerCase() : true
-    )
+const normalizeCity = (city) => city?.trim().toLowerCase() || "";
+
+const filteredVisits = visits
+  .filter((v) => {
+    const visitCity = normalizeCity(v["City"]);
+    if (filterCity.length > 0) {
+      return filterCity.map(normalizeCity).includes(visitCity);
+    }
+    return true;
+  })
+
+    // Filter by date and month
     .filter((v) => {
       const rawDate = v["dateandtime"];
       if (!rawDate) return true;
@@ -34,11 +44,14 @@ export const processVisitsData = ({
 
       if (dateFrom && parsedDate < new Date(dateFrom)) return false;
       if (dateTo && parsedDate > new Date(dateTo)) return false;
-      if (filterMonth) {
-        return parsedDate.getMonth() + 1 === Number(filterMonth);
+
+      if (filterMonth.length > 0) {
+        return filterMonth.includes(parsedDate.getMonth() + 1);
       }
+
       return true;
     })
+    // Sort by Visit Code descending
     .sort((a, b) =>
       (b["Visit Code"] || "").localeCompare(a["Visit Code"] || "", undefined, {
         numeric: true,
@@ -46,6 +59,7 @@ export const processVisitsData = ({
       })
     );
 
+  // Stats calculations
   const totalVisits = filteredVisits.length;
   const successfulConversions = filteredVisits.filter(
     (v) => v["Visit Phase"]?.toLowerCase() === "closure"
@@ -54,6 +68,7 @@ export const processVisitsData = ({
     v["Visit Phase"]?.toLowerCase().includes("follow")
   ).length;
 
+  // Pagination
   const totalPages = Math.ceil(filteredVisits.length / rowsPerPage);
   const paginatedVisits = filteredVisits.slice(
     (currentPage - 1) * rowsPerPage,
@@ -70,6 +85,7 @@ export const processVisitsData = ({
   };
 };
 
+// Utility to get average of any numeric key
 export const getAverage = (visits, key) => {
   const total = visits.reduce((sum, v) => sum + (Number(v[key]) || 0), 0);
   return visits.length > 0 ? (total / visits.length).toFixed(2) : "0.00";

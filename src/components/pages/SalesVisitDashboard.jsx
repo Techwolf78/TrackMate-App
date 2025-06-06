@@ -11,13 +11,13 @@ import Loader from "../../components/SalesDashboard/Loader";
 const SalesVisitDashboard = () => {
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterCity, setFilterCity] = useState("");
+  const [filterCity, setFilterCity] = useState([]);
   const [cityOptions, setCityOptions] = useState([]);
   const [citiesLoaded, setCitiesLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [filterMonth, setFilterMonth] = useState("");
+  const [filterMonth, setFilterMonth] = useState([]);
 
   useEffect(() => {
     const fetchVisits = async () => {
@@ -43,23 +43,34 @@ const SalesVisitDashboard = () => {
     fetchVisits();
   }, []);
 
-  const loadCities = () => {
-    if (!citiesLoaded) {
-      const uniqueCities = [
-        ...new Set(visits.map((v) => v["City"]).filter(Boolean)),
-      ].sort();
-      setCityOptions(uniqueCities);
-      setCitiesLoaded(true);
-    }
-  };
+const normalizeCity = (city) => {
+  const trimmed = city.trim().toLowerCase();
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1); // e.g., "pune" → "Pune"
+};
 
-  const { 
-    filteredVisits, 
-    totalVisits, 
-    successfulConversions, 
+const loadCities = () => {
+  if (!citiesLoaded) {
+    const uniqueCities = [
+      ...new Set(
+        visits
+          .map((v) => v["City"])
+          .filter(Boolean)
+          .map(normalizeCity)
+      ),
+    ].sort();
+    setCityOptions(uniqueCities);
+    setCitiesLoaded(true);
+  }
+};
+
+
+  const {
+    filteredVisits,
+    totalVisits,
+    successfulConversions,
     pendingFollowups,
     paginatedVisits,
-    totalPages 
+    totalPages,
   } = processVisitsData({
     visits,
     filterCity,
@@ -67,7 +78,7 @@ const SalesVisitDashboard = () => {
     dateTo,
     filterMonth,
     currentPage,
-    rowsPerPage: 10
+    rowsPerPage: 10,
   });
 
   return (
@@ -118,7 +129,7 @@ const SalesVisitDashboard = () => {
                 cityOptions={cityOptions}
               />
 
-              <StatsSection 
+              <StatsSection
                 visits={filteredVisits}
                 totalVisits={totalVisits}
                 successfulConversions={successfulConversions}
@@ -127,7 +138,7 @@ const SalesVisitDashboard = () => {
 
               <RecentActivityTable visits={filteredVisits} />
 
-              <AllRecordsTable 
+              <AllRecordsTable
                 visits={paginatedVisits}
                 currentPage={currentPage}
                 totalPages={totalPages}
